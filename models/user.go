@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 package models
 
-import (
-	"qdroid-server/crypto"
-)
+var AllModels []any
 
 type User struct {
 	ID       uint   `gorm:"primaryKey"`
@@ -10,10 +10,6 @@ type User struct {
 	Password string `gorm:"not null"`
 }
 
-func HashPassword(password string) string {
-	return crypto.HashPassword(password)
-}
-
-func VerifyPassword(password, hash string) bool {
-	return crypto.VerifyPassword(password, hash)
+func init() {
+	AllModels = append(AllModels, &User{})
 }

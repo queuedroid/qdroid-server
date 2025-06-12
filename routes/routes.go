@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 package routes
 
 import (
@@ -7,7 +9,7 @@ import (
 )
 
 func RegisterRoutes(e *echo.Echo) {
-	api := e.Group("/v1")
-	api.POST("/signup", handlers.SignupHandler)
-	api.POST("/login", handlers.LoginHandler)
+	api_v1 := e.Group("/v1")
+	api_v1.GET("/signup", handlers.SignupHandler)
+	api_v1.POST("/login", handlers.LoginHandler)
 }

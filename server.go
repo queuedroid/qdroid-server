@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"qdroid-server/commons"
+	"qdroid-server/db"
 	"qdroid-server/routes"
 	"slices"
 
@@ -14,7 +15,8 @@ import (
 )
 
 func main() {
-	_ = commons.Logger // ensure logger is initialized
+	commons.LoadEnvFile()
+	commons.InitLogger()
 
 	e := echo.New()
 	e.HideBanner = true
@@ -58,11 +60,20 @@ func main() {
 
 	e.Use(middleware.Recover())
 
+	db.InitDB()
+	if slices.Contains(os.Args[1:], "--migrate-db") {
+		commons.Logger.Debug("--migrate-db flag detected, running migrations")
+		db.MigrateDB()
+	}
+
 	routes.RegisterRoutes(e)
 
-	port := os.Getenv("PORT")
+	port := commons.GetEnv("PORT")
 	if port == "" {
 		port = ":8080"
+	}
+	if port[0] != ':' {
+		port = ":" + port
 	}
 	e.Logger.Fatal(e.Start(port))
 }

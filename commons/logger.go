@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 package commons
 
 import (
@@ -7,9 +9,9 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-var Logger = newLogger()
+var Logger = log.New("qdroid")
 
-func newLogger() *log.Logger {
+func InitLogger() {
 	logger := log.New("qdroid")
 	level := strings.ToUpper(os.Getenv("LOG_LEVEL"))
 	switch level {
@@ -27,5 +29,5 @@ func newLogger() *log.Logger {
 		logger.SetLevel(log.INFO)
 	}
 	logger.SetHeader("${time_rfc3339} ${level} ${short_file}:${line} -")
-	return logger
+	Logger = logger
 }
