@@ -8,23 +8,45 @@ import (
 	"qdroid-server/crypto"
 	"qdroid-server/db"
 	"qdroid-server/models"
+	"qdroid-server/rabbitmq"
 
 	"github.com/labstack/echo/v4"
 )
 
-type SignupRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
+var (
+	rmqURL = func() string {
+		url := commons.GetEnv("RABBITMQ_API_URL")
+		if url == "" {
+			return "http://localhost:15672"
+		}
+		return url
+	}()
+	rmqUser = func() string {
+		user := commons.GetEnv("RABBITMQ_USERNAME")
+		if user == "" {
+			return "guest"
+		}
+		return user
+	}()
+	rmqPass = func() string {
+		pass := commons.GetEnv("RABBITMQ_PASSWORD")
+		if pass == "" {
+			return "guest"
+		}
+		return pass
+	}()
+)
 
 func SignupHandler(c echo.Context) error {
 	logger := c.Logger()
-	commons.Logger.Debug("SignupHandler called")
+
+	rmqClient, err := rabbitmq.NewClient(rmqURL, rmqUser, rmqPass)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	_ = rmqClient
+
 	var req SignupRequest
 	if err := c.Bind(&req); err != nil {
 		logger.Error("Invalid signup request payload:", err)

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"qdroid-server/commons"
 	"qdroid-server/db"
@@ -23,6 +24,22 @@ func main() {
 
 	e.Logger.SetLevel(commons.Logger.Level())
 	e.Logger.SetHeader("${time_rfc3339} ${level} ${short_file}:${line} -")
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			err := next(c)
+			if err != nil {
+				if he, ok := err.(*echo.HTTPError); ok && he.Code == http.StatusInternalServerError {
+					msg := "Something went wrong. We're working to fix it as quickly as possible. Please try again later. If the issue persists, please contact support."
+					if !c.Response().Committed {
+						return c.JSON(http.StatusInternalServerError, map[string]string{"message": msg})
+					}
+					return nil
+				}
+			}
+			return err
+		}
+	})
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:      true,
