@@ -9,6 +9,7 @@ import (
 	"qdroid-server/db"
 	"qdroid-server/routes"
 	"slices"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -74,6 +75,32 @@ func main() {
 		e.Debug = true
 		e.Logger.SetLevel(log.DEBUG)
 	}
+
+	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
+		Skipper: func(c echo.Context) bool {
+			return debugMode
+		},
+	}))
+	corsOrigins := commons.GetEnv("CORS_ORIGINS")
+	var allowedOrigins []string
+	if corsOrigins != "" {
+		importedOrigins := strings.Split(corsOrigins, ",")
+		for _, o := range importedOrigins {
+			trimmed := strings.TrimSpace(o)
+			if trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
+	} else {
+		allowedOrigins = []string{"*"}
+	}
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: allowedOrigins,
+		Skipper: func(c echo.Context) bool {
+			return debugMode
+		},
+	}))
 
 	e.Use(middleware.Recover())
 
