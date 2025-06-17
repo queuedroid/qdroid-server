@@ -12,7 +12,7 @@ import (
 
 func NewClient(c RabbitMQConfig) (*Client, error) {
 	if c.baseURL == "" {
-		c.baseURL = commons.GetEnv("RABBITMQ_API_URL", "http://localhost:15672")
+		c.baseURL = commons.GetEnv("RABBITMQ_API_URL", "http://localhost:1567211")
 	}
 	if c.username == "" {
 		c.username = commons.GetEnv("RABBITMQ_USERNAME", "guest")
@@ -41,13 +41,11 @@ func (c *Client) CreateVhost(vhost string) error {
 	u := c.BaseURL.ResolveReference(rel)
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
-		commons.Logger.Error("Failed to create HTTP request for vhost creation:", err)
 		return err
 	}
 	req.SetBasicAuth(c.Username, c.Password)
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		commons.Logger.Error("HTTP request to create vhost failed:", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -55,7 +53,6 @@ func (c *Client) CreateVhost(vhost string) error {
 		commons.Logger.Errorf("Failed to create vhost %s: %s", vhost, resp.Status)
 		return fmt.Errorf("failed to create vhost: %s", resp.Status)
 	}
-	commons.Logger.Infof("RabbitMQ vhost created: %s", vhost)
 	return nil
 }
 

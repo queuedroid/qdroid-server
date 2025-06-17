@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
+var Conn *gorm.DB
 
 func InitDB() {
 	var err error
@@ -67,7 +67,7 @@ func InitDB() {
 		logLevel = logger.Silent
 	}
 
-	DB, err = gorm.Open(dialector, &gorm.Config{
+	Conn, err = gorm.Open(dialector, &gorm.Config{
 		Logger: logger.New(
 			commons.Logger,
 			logger.Config{
@@ -89,7 +89,7 @@ func InitDB() {
 
 func MigrateDB() {
 	commons.Logger.Info("Running database migrations")
-	err := DB.AutoMigrate(models.AllModels...)
+	err := Conn.AutoMigrate(models.AllModels...)
 	if err != nil {
 		commons.Logger.Error("Database migration failed:", err)
 		os.Exit(1)

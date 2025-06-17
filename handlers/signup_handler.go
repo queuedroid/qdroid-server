@@ -65,7 +65,7 @@ func SignupHandler(c echo.Context) error {
 		PhoneNumber: &req.PhoneNumber,
 	}
 
-	tx := db.DB.Begin()
+	tx := db.Conn.Begin()
 	if tx.Error != nil {
 		logger.Errorf("Transaction begin failed: %v", tx.Error)
 		return echo.ErrInternalServerError
