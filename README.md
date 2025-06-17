@@ -18,6 +18,7 @@ QueueDroid Server is a backend service for managing SMS message queues.
 - **Go** 1.20+
 - **Git**
 - **Database**: SQLite (default), [PostgreSQL](https://www.postgresql.org/download/), or [MySQL](https://dev.mysql.com/downloads/)
+- **Broker**: [RabbitMQ](https://www.rabbitmq.com/download.html) (required)
 
 ---
 
@@ -50,6 +51,8 @@ Edit `.env` for your setup. Key variables:
 - `DB_PATH` - SQLite file (default: `qdroid.db`)
 - `POSTGRES_DSN` / `MYSQL_DSN` - DSN for Postgres/MySQL
 - `CORS_ORIGINS` - Allowed origins
+- `RABBITMQ_API_URL` - RabbitMQ management API URL (default: `http://localhost:15672`)
+- `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` - RabbitMQ management credentials
 
 ---
 
