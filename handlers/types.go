@@ -3,11 +3,12 @@
 package handlers
 
 type SignupRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Password    string `json:"password"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
 }
 
 type LoginRequest struct {
-	Username string `json:"username"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }

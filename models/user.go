@@ -2,12 +2,22 @@
 
 package models
 
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
 var AllModels []any
 
 type User struct {
-	ID       uint   `gorm:"primaryKey"`
-	Username string `gorm:"unique;not null"`
-	Password string `gorm:"not null"`
+	ID          uint    `gorm:"primaryKey"`
+	Email       string  `gorm:"not null;uniqueIndex"`
+	Password    string  `gorm:"not null"`
+	PhoneNumber *string `gorm:"default:null"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
 
 func init() {

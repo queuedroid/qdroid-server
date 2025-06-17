@@ -10,24 +10,27 @@ import (
 	"time"
 )
 
-type Client struct {
-	BaseURL    *url.URL
-	Username   string
-	Password   string
-	HTTPClient *http.Client
-}
+func NewClient(c RabbitMQConfig) (*Client, error) {
+	if c.baseURL == "" {
+		c.baseURL = commons.GetEnv("RABBITMQ_API_URL", "http://localhost:15672")
+	}
+	if c.username == "" {
+		c.username = commons.GetEnv("RABBITMQ_USERNAME", "guest")
+	}
+	if c.password == "" {
+		c.password = commons.GetEnv("RABBITMQ_PASSWORD", "guest")
+	}
 
-func NewClient(baseURL, username, password string) (*Client, error) {
-	parsedURL, err := url.Parse(baseURL)
+	parsedURL, err := url.Parse(c.baseURL)
 	if err != nil {
 		commons.Logger.Error("Failed to parse RabbitMQ API base URL:", err)
 		return nil, err
 	}
-	commons.Logger.Debugf("RabbitMQ API client initialized for %s", baseURL)
+	commons.Logger.Debugf("RabbitMQ API client initialized for %s", c.baseURL)
 	return &Client{
 		BaseURL:    parsedURL,
-		Username:   username,
-		Password:   password,
+		Username:   c.username,
+		Password:   c.password,
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 	}, nil
 }

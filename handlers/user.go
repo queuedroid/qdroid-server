@@ -3,88 +3,91 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
-	"qdroid-server/commons"
 	"qdroid-server/crypto"
 	"qdroid-server/db"
 	"qdroid-server/models"
+	"qdroid-server/passwordcheck"
 	"qdroid-server/rabbitmq"
 
 	"github.com/labstack/echo/v4"
 )
 
-var (
-	rmqURL = func() string {
-		url := commons.GetEnv("RABBITMQ_API_URL")
-		if url == "" {
-			return "http://localhost:15672"
-		}
-		return url
-	}()
-	rmqUser = func() string {
-		user := commons.GetEnv("RABBITMQ_USERNAME")
-		if user == "" {
-			return "guest"
-		}
-		return user
-	}()
-	rmqPass = func() string {
-		pass := commons.GetEnv("RABBITMQ_PASSWORD")
-		if pass == "" {
-			return "guest"
-		}
-		return pass
-	}()
-)
-
 func SignupHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	rmqClient, err := rabbitmq.NewClient(rmqURL, rmqUser, rmqPass)
+	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
 	if err != nil {
+		logger.Error("Failed to initialize RabbitMQ client:", err)
 		return echo.ErrInternalServerError
 	}
-
-	_ = rmqClient
 
 	var req SignupRequest
 	if err := c.Bind(&req); err != nil {
 		logger.Error("Invalid signup request payload:", err)
-		return c.String(http.StatusBadRequest, "Invalid request")
+		return echo.ErrBadRequest
 	}
-	if req.Username == "" || req.Password == "" {
-		logger.Error("Username and password required for signup")
-		return c.String(http.StatusBadRequest, "Username and password required")
-	}
-	user := models.User{
-		Username: req.Username,
-		Password: crypto.HashPassword(req.Password),
-	}
-	if err := db.DB.Create(&user).Error; err != nil {
-		logger.Error("User already exists or DB error:", err)
-		return c.String(http.StatusConflict, "User already exists")
-	}
-	logger.Info("User signed up:", req.Username)
-	return c.String(http.StatusCreated, "Signup successful")
-}
 
-func LoginHandler(c echo.Context) error {
-	logger := c.Logger()
-	commons.Logger.Debug("LoginHandler called")
-	var req LoginRequest
-	if err := c.Bind(&req); err != nil {
-		logger.Error("Invalid login request payload:", err)
-		return c.String(http.StatusBadRequest, "Invalid request")
+	if req.Email == "" {
+		logger.Error("Email is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "email field is required",
+		}
 	}
-	var user models.User
-	if err := db.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		logger.Error("Invalid username or DB error during login:", err)
-		return c.String(http.StatusUnauthorized, "Invalid username or password")
+
+	if req.Password == "" {
+		logger.Error("Password is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "password field is required",
+		}
 	}
-	if !crypto.VerifyPassword(req.Password, user.Password) {
-		logger.Error("Password verification failed for user:", req.Username)
-		return c.String(http.StatusUnauthorized, "Invalid username or password")
+
+	if err := passwordcheck.ValidatePassword(c.Request().Context(), req.Password); err != nil {
+		logger.Error("Password validation failed: ", err)
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("Invalid password: %v", err.Error()),
+		}
 	}
-	logger.Info("User logged in:", req.Username)
-	return c.String(http.StatusOK, "Login successful")
+
+	hash, err := crypto.HashPassword(req.Password)
+	if err != nil {
+		logger.Errorf("Failed to hash password: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	user := models.User{
+		Email:       req.Email,
+		Password:    hash,
+		PhoneNumber: &req.PhoneNumber,
+	}
+
+	tx := db.DB.Begin()
+	if tx.Error != nil {
+		logger.Errorf("Transaction begin failed: %v", tx.Error)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Create(&user).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to create user: %v", err)
+		return echo.NewHTTPError(http.StatusConflict, "User already exists")
+	}
+
+	if err := rmqClient.CreateVhost(user.Email); err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to create RabbitMQ vhost: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		logger.Errorf("Transaction commit failed: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	logger.Infof("User signed up successfully")
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Signup successful"})
 }

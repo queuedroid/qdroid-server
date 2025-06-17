@@ -12,6 +12,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -52,8 +53,18 @@ func InitDB() {
 		dbInfo = dbPath
 	}
 
-	DB, err = gorm.Open(dialector, &gorm.Config{})
+	DB, err = gorm.Open(dialector, &gorm.Config{
+		Logger: logger.New(
+			commons.Logger,
+			logger.Config{
+				SlowThreshold: 200 * 1e6,
+				LogLevel:      logger.Info,
+				Colorful:      true,
+			},
+		),
+	})
 	if err != nil {
+		commons.Logger.Error("Failed to connect to database:", err)
 		os.Exit(1)
 	}
 	commons.Logger.Infof("Database connection established. %s %s, %s %s",

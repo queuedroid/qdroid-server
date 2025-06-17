@@ -50,7 +50,12 @@ func LoadEnvFile() {
 	envLoaded = true
 }
 
-func GetEnv(key string) string {
-	LoadEnvFile()
-	return os.Getenv(key)
+func GetEnv(key string, fallback ...string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	if len(fallback) > 0 {
+		return fallback[0]
+	}
+	return ""
 }

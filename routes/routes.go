@@ -12,7 +12,7 @@ import (
 func RegisterRoutes(e *echo.Echo) {
 	commons.Logger.Debug("Registering v1 routes")
 	api_v1 := e.Group("/v1")
-	api_v1.GET("/signup", handlers.SignupHandler)
-	api_v1.POST("/login", handlers.LoginHandler)
+	api_v1.POST("/signup", handlers.SignupHandler)
+	// api_v1.POST("/login", handlers.LoginHandler)
 	commons.Logger.Info("v1 routes registered successfully")
 }
