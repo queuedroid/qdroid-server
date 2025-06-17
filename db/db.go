@@ -53,12 +53,26 @@ func InitDB() {
 		dbInfo = dbPath
 	}
 
+	var logLevel logger.LogLevel
+	switch commons.Logger.Level() {
+	case 1:
+		logLevel = logger.Info
+	case 2:
+		logLevel = logger.Silent
+	case 3:
+		logLevel = logger.Warn
+	case 4:
+		logLevel = logger.Error
+	default:
+		logLevel = logger.Silent
+	}
+
 	DB, err = gorm.Open(dialector, &gorm.Config{
 		Logger: logger.New(
 			commons.Logger,
 			logger.Config{
 				SlowThreshold: 200 * 1e6,
-				LogLevel:      logger.Info,
+				LogLevel:      logLevel,
 				Colorful:      true,
 			},
 		),

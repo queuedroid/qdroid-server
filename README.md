@@ -29,7 +29,7 @@ git clone https://github.com/queuedroid/qdroid-server.git
 cd qdroid-server
 go mod download
 cp .env.example .env
-go run server.go
+go run server.go --env-file .env --migrate-db
 ```
 
 > [!TIP]
@@ -39,6 +39,14 @@ go run server.go
 > ```bash
 > go run server.go --migrate-db
 > ```
+>
+> You can also specify a custom environment file using the `--env-file` flag:
+>
+> ```bash
+> go run server.go --env-file .env
+> ```
+>
+> If no `--env-file` is provided, configuration values are read directly from the environment variables.
 
 ---
 
@@ -66,11 +74,12 @@ go run server.go
 
 - `--debug` : Enable debug logs
 - `--migrate-db` : Run DB migrations
+- `--env-file <file>` : Load environment variables from a custom file
 
 Example:
 
 ```sh
-go run server.go --debug --migrate-db
+go run server.go --debug --migrate-db --env-file .env.production
 ```
 
 ---
