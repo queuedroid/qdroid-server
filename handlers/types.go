@@ -2,13 +2,28 @@
 
 package handlers
 
+// swagger:model SignupRequest
 type SignupRequest struct {
-	Password    string `json:"password"`
-	Email       string `json:"email"`
+	// User's password
+	// required: true
+	Password string `json:"password"`
+	// User's email address
+	// required: true
+	Email string `json:"email"`
+	// Optional phone number
 	PhoneNumber string `json:"phone_number"`
 }
 
+// swagger:model SignupResponse
+type SignupResponse struct {
+	// Signup successful message
+	Message string `json:"message"`
+}
+
+// swagger:model LoginRequest
 type LoginRequest struct {
-	Email    string `json:"email"`
+	// User's email address
+	Email string `json:"email"`
+	// User's password
 	Password string `json:"password"`
 }

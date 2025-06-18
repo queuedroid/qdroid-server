@@ -7,6 +7,7 @@ import (
 	"os"
 	"qdroid-server/commons"
 	"qdroid-server/db"
+	"qdroid-server/docs"
 	"qdroid-server/routes"
 	"slices"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 func main() {
@@ -22,6 +24,10 @@ func main() {
 
 	e := echo.New()
 	e.HideBanner = true
+
+	docs.SwaggerInfo.Title = "QueueDroid API"
+	docs.SwaggerInfo.Description = "QueueDroid API documentation."
+	e.GET("/docs/*", echoSwagger.WrapHandler)
 
 	e.Logger.SetLevel(commons.Logger.Level())
 	e.Logger.SetHeader("${time_rfc3339} ${level} ${short_file}:${line} -")

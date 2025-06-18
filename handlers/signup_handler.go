@@ -14,6 +14,18 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// SignupHandler godoc
+// @Summary      Register a new user
+// @Description  Creates a new user account.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        signupRequest  body  SignupRequest  true  "Signup request payload"
+// @Success      201 {object} SignupResponse 	 "Signup successful"
+// @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
+// @Failure      409 {object} echo.HTTPError     "Duplicate user"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/auth/signup [post]
 func SignupHandler(c echo.Context) error {
 	logger := c.Logger()
 
@@ -89,5 +101,5 @@ func SignupHandler(c echo.Context) error {
 	}
 
 	logger.Infof("User signed up successfully")
-	return c.JSON(http.StatusCreated, map[string]string{"message": "Signup successful"})
+	return c.JSON(http.StatusCreated, SignupResponse{Message: "Signup successful"})
 }

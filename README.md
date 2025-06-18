@@ -4,6 +4,19 @@ QueueDroid Server is a backend service for managing SMS message queues.
 
 ---
 
+## API Documentation
+
+The OpenAPI (Swagger) documentation is served at the [`/docs/`](https://api.queuedroid.com/docs/index.html).
+
+To update the docs, use [swaggo/swag](https://github.com/swaggo/swag):
+
+```sh
+go install github.com/swaggo/swag/cmd/swag@latest
+swag init
+```
+
+---
+
 ## Table of Contents
 
 - [Requirements](#requirements)
@@ -17,6 +30,7 @@ QueueDroid Server is a backend service for managing SMS message queues.
 
 - **Go** 1.20+
 - **Git**
+- **Make** (for running setup/build commands)
 - **Database**: SQLite (default), [PostgreSQL](https://www.postgresql.org/download/), or [MySQL](https://dev.mysql.com/downloads/)
 - **Broker**: [RabbitMQ](https://www.rabbitmq.com/download.html) (required)
 
@@ -24,9 +38,18 @@ QueueDroid Server is a backend service for managing SMS message queues.
 
 ## Quick Start
 
+You can use the provided `Makefile` for setup and running the server.
+
 ```sh
 git clone https://github.com/queuedroid/qdroid-server.git
 cd qdroid-server
+make setup
+make dev
+```
+
+Or, if you prefer to run manually:
+
+```sh
 go mod download
 cp .env.example .env
 go run server.go --env-file .env --migrate-db
@@ -65,6 +88,18 @@ Edit `.env` for your setup. Key variables:
 ---
 
 ## Running
+
+You can use `make` targets for common tasks:
+
+```sh
+make dev      # Run in development mode (with debug and migration)
+make run      # Run the server with .env
+make build    # Build the server binary
+make start    # Start the built binary
+make docs     # Generate Swagger docs
+```
+
+Or run manually:
 
 ```sh
 go run server.go
