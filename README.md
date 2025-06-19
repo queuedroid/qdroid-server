@@ -4,25 +4,13 @@ QueueDroid Server is a backend service for managing SMS message queues.
 
 ---
 
-## API Documentation
-
-The OpenAPI (Swagger) documentation is served at the [`/docs/`](https://api.queuedroid.com/docs/index.html).
-
-To update the docs, use [swaggo/swag](https://github.com/swaggo/swag):
-
-```sh
-go install github.com/swaggo/swag/cmd/swag@latest
-swag init
-```
-
----
-
 ## Table of Contents
 
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Running](#running)
+- [Reference](#reference)
 
 ---
 
@@ -116,6 +104,14 @@ Example:
 ```sh
 go run server.go --debug --migrate-db --env-file .env.production
 ```
+
+---
+
+## Reference
+
+### API Documentation
+
+The OpenAPI (Swagger) documentation is served at the [`/docs/`](https://api.queuedroid.com/docs/index.html).
 
 ---
 

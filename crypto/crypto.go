@@ -3,87 +3,74 @@
 package crypto
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
-	"strings"
-
 	"qdroid-server/commons"
+	"strconv"
 
-	"golang.org/x/crypto/argon2"
+	"github.com/alexedwards/argon2id"
 )
 
-const (
-	time    = 1
-	memory  = 64 * 1024
-	threads = 4
-	keyLen  = 32
-	saltLen = 16
+var (
+	argonTime    uint32
+	argonMemory  uint32
+	argonThreads uint8
+	argonKeyLen  uint32
+	argonSaltLen uint32
 )
+
+func init() {
+	if v := commons.GetEnv("ARGON2_TIME", "1"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			argonTime = uint32(i)
+		}
+	}
+	if v := commons.GetEnv("ARGON2_MEMORY", "65536"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			argonMemory = uint32(i)
+		}
+	}
+	if v := commons.GetEnv("ARGON2_THREADS", "2"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			argonThreads = uint8(i)
+		}
+	}
+	if v := commons.GetEnv("ARGON2_KEYLEN", "32"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			argonKeyLen = uint32(i)
+		}
+	}
+	if v := commons.GetEnv("ARGON2_SALTLEN", "16"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			argonSaltLen = uint32(i)
+		}
+	}
+}
 
 func HashPassword(password string) (string, error) {
 	commons.Logger.Debug("Hashing password")
-
-	salt := make([]byte, saltLen)
-	if _, err := rand.Read(salt); err != nil {
+	params := &argon2id.Params{
+		Memory:      argonMemory,
+		Iterations:  argonTime,
+		Parallelism: argonThreads,
+		SaltLength:  argonSaltLen,
+		KeyLength:   argonKeyLen,
+	}
+	hash, err := argon2id.CreateHash(password, params)
+	if err != nil {
 		return "", err
 	}
-
-	hash := argon2.IDKey([]byte(password), salt, time, memory, threads, keyLen)
-
-	encoded := fmt.Sprintf("$argon2id$v=19$t=%d$m=%d$p=%d$%s$%s",
-		time, memory, threads,
-		base64.RawStdEncoding.EncodeToString(salt),
-		base64.RawStdEncoding.EncodeToString(hash),
-	)
-
 	commons.Logger.Debug("Password hashed")
-	return encoded, nil
+	return hash, nil
 }
 
 func VerifyPassword(password, encodedHash string) error {
 	commons.Logger.Debug("Verifying password")
-
-	parts := strings.Split(encodedHash, "$")
-	if len(parts) != 6 {
-		return fmt.Errorf("invalid encoded hash format")
-	}
-
-	var t, m, p uint32
-	_, err := fmt.Sscanf(parts[3], "t=%d", &t)
-	_, err2 := fmt.Sscanf(parts[4], "m=%d", &m)
-	_, err3 := fmt.Sscanf(parts[5], "p=%d", &p)
-
-	if err != nil || err2 != nil || err3 != nil {
-		return fmt.Errorf("failed to parse Argon2 parameters")
-	}
-
-	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
+	match, err := argon2id.ComparePasswordAndHash(password, encodedHash)
 	if err != nil {
-		return fmt.Errorf("failed to decode salt: %w", err)
+		return err
 	}
-
-	hash, err := base64.RawStdEncoding.DecodeString(parts[5])
-	if err != nil {
-		return fmt.Errorf("failed to decode hash: %w", err)
+	if !match {
+		return fmt.Errorf("password verification failed")
 	}
-
-	newHash := argon2.IDKey([]byte(password), salt, t, m, threads, uint32(len(hash)))
-
-	if subtleConstantTimeCompare(hash, newHash) {
-		return nil
-	}
-
-	return fmt.Errorf("password verification failed")
-}
-
-func subtleConstantTimeCompare(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	var result byte
-	for i := range a {
-		result |= a[i] ^ b[i]
-	}
-	return result == 0
+	return nil
 }
