@@ -9,20 +9,24 @@ definitions:
         description: |-
           User's email address
           required: true
+        example: user@example.com
         type: string
       password:
         description: |-
           User's password
           required: true
+        example: MySecretPassword@123
         type: string
       phone_number:
         description: Optional phone number
+        example: "+2371234567890"
         type: string
     type: object
   handlers.SignupResponse:
     properties:
       message:
         description: Signup successful message
+        example: Signup successful
         type: string
     type: object
 info:

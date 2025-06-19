@@ -65,6 +65,19 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
+	var count int64
+	if err := db.Conn.Model(&models.User{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
+		logger.Errorf("Failed to check for duplicate user: %v", err)
+		return echo.ErrInternalServerError
+	}
+	if count > 0 {
+		logger.Errorf("The email is already registered.")
+		return &echo.HTTPError{
+			Code:    http.StatusConflict,
+			Message: "The email is already registered, please try another one.",
+		}
+	}
+
 	sec := crypto.NewCrypto()
 	hash, err := sec.HashPassword(req.Password)
 	if err != nil {
@@ -87,7 +100,7 @@ func SignupHandler(c echo.Context) error {
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to create user: %v", err)
-		return echo.NewHTTPError(http.StatusConflict, "The email is already registered, please try another one.")
+		return echo.ErrInternalServerError
 	}
 
 	if err := rmqClient.CreateVhost(user.Email); err != nil {

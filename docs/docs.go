@@ -80,15 +80,18 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "description": "User's email address\nrequired: true",
-                    "type": "string"
+                    "type": "string",
+                    "example": "user@example.com"
                 },
                 "password": {
                     "description": "User's password\nrequired: true",
-                    "type": "string"
+                    "type": "string",
+                    "example": "MySecretPassword@123"
                 },
                 "phone_number": {
                     "description": "Optional phone number",
-                    "type": "string"
+                    "type": "string",
+                    "example": "+2371234567890"
                 }
             }
         },
@@ -97,7 +100,8 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "description": "Signup successful message",
-                    "type": "string"
+                    "type": "string",
+                    "example": "Signup successful"
                 }
             }
         }
