@@ -4,6 +4,58 @@
         "contact": {}
     },
     "paths": {
+        "/v1/auth/login": {
+            "post": {
+                "description": "Authenticates a user and returns a token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login a user",
+                "parameters": [
+                    {
+                        "description": "Login request payload",
+                        "name": "loginRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/signup": {
             "post": {
                 "description": "Creates a new user account.",
@@ -64,6 +116,36 @@
                 "message": {}
             }
         },
+        "handlers.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "User's email address",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "description": "User's password",
+                    "type": "string",
+                    "example": "MySecretPassword@123"
+                }
+            }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Message indicating successful login",
+                    "type": "string",
+                    "example": "Login successful"
+                },
+                "session_token": {
+                    "description": "Authentication session token\nThis token is used for subsequent authenticated requests.\nIt should be stored securely by the client.\nShould be used in the Authorization header as a Bearer token.",
+                    "type": "string",
+                    "example": "sample_session_token"
+                }
+            }
+        },
         "handlers.SignupRequest": {
             "type": "object",
             "properties": {
@@ -88,7 +170,7 @@
             "type": "object",
             "properties": {
                 "message": {
-                    "description": "Signup successful message",
+                    "description": "Message indicating successful signup",
                     "type": "string",
                     "example": "Signup successful"
                 }

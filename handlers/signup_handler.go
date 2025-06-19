@@ -65,11 +65,7 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
-	var count int64
-	if err := db.Conn.Model(&models.User{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
-		logger.Errorf("Failed to check for duplicate user: %v", err)
-		return echo.ErrInternalServerError
-	}
+	count := db.Conn.Where("email = ?", req.Email).First(&models.User{}).RowsAffected
 	if count > 0 {
 		logger.Errorf("The email is already registered.")
 		return &echo.HTTPError{
@@ -78,14 +74,28 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
-	sec := crypto.NewCrypto()
-	hash, err := sec.HashPassword(req.Password)
+	newCrypto := crypto.NewCrypto()
+	hash, err := newCrypto.HashPassword(req.Password)
 	if err != nil {
 		logger.Errorf("Failed to hash password: %v", err)
 		return echo.ErrInternalServerError
 	}
 
+	aid, err := crypto.GenerateHexID("acct_", 16)
+	if err != nil {
+		logger.Errorf("Failed to generate account ID: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	default_apikey_label := "__default__"
+	default_apikey, err := crypto.GenerateHexID("ak_sk_live_", 32)
+	if err != nil {
+		logger.Errorf("Failed to generate default API key: %v", err)
+		return echo.ErrInternalServerError
+	}
+
 	user := models.User{
+		AccountID:   aid,
 		Email:       req.Email,
 		Password:    hash,
 		PhoneNumber: &req.PhoneNumber,
@@ -103,22 +113,34 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	if err := rmqClient.CreateVhost(user.Email); err != nil {
+	apikey := models.APIKey{
+		UserID: user.ID,
+		Token:  default_apikey,
+		Label:  &default_apikey_label,
+	}
+
+	if err := tx.Create(&apikey).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to create API key: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := rmqClient.CreateVhost(user.AccountID); err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to create RabbitMQ vhost: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	if err := rmqClient.CreateUser(user.Email, req.Password, []string{"management"}); err != nil {
-		rmqClient.DeleteVhost(user.Email)
+	if err := rmqClient.CreateUser(user.AccountID, apikey.Token, []string{"management"}); err != nil {
+		rmqClient.DeleteVhost(user.AccountID)
 		tx.Rollback()
 		logger.Errorf("Failed to create RabbitMQ user: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	if err := rmqClient.SetPermissions(user.Email, user.Email, ".*", ".*", ".*"); err != nil {
-		rmqClient.DeleteUser(user.Email)
-		rmqClient.DeleteVhost(user.Email)
+	if err := rmqClient.SetPermissions(user.AccountID, user.AccountID, ".*", ".*", ".*"); err != nil {
+		rmqClient.DeleteUser(user.AccountID)
+		rmqClient.DeleteVhost(user.AccountID)
 		tx.Rollback()
 		logger.Errorf("Failed to set RabbitMQ permissions: %v", err)
 		return echo.ErrInternalServerError

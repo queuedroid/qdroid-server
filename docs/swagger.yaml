@@ -3,6 +3,32 @@ definitions:
     properties:
       message: {}
     type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        description: User's email address
+        example: user@example.com
+        type: string
+      password:
+        description: User's password
+        example: MySecretPassword@123
+        type: string
+    type: object
+  handlers.LoginResponse:
+    properties:
+      message:
+        description: Message indicating successful login
+        example: Login successful
+        type: string
+      session_token:
+        description: |-
+          Authentication session token
+          This token is used for subsequent authenticated requests.
+          It should be stored securely by the client.
+          Should be used in the Authorization header as a Bearer token.
+        example: sample_session_token
+        type: string
+    type: object
   handlers.SignupRequest:
     properties:
       email:
@@ -25,13 +51,47 @@ definitions:
   handlers.SignupResponse:
     properties:
       message:
-        description: Signup successful message
+        description: Message indicating successful signup
         example: Signup successful
         type: string
     type: object
 info:
   contact: {}
 paths:
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a token.
+      parameters:
+      - description: Login request payload
+        in: body
+        name: loginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Bad request, missing required fields
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Login a user
+      tags:
+      - auth
   /v1/auth/signup:
     post:
       consumes:

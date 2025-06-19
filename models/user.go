@@ -12,6 +12,7 @@ var AllModels []any
 
 type User struct {
 	ID          uint    `gorm:"primaryKey"`
+	AccountID   string  `gorm:"not null;uniqueIndex"`
 	Email       string  `gorm:"not null;uniqueIndex"`
 	Password    string  `gorm:"not null"`
 	PhoneNumber *string `gorm:"default:null"`

@@ -3,6 +3,8 @@
 package crypto
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"qdroid-server/commons"
 	"strconv"
@@ -79,4 +81,13 @@ func (c *Crypto) VerifyPassword(password, encodedHash string) error {
 		return fmt.Errorf("password verification failed")
 	}
 	return nil
+}
+
+func GenerateHexID(prefix string, length int) (string, error) {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	return prefix + hex.EncodeToString(b), nil
 }
