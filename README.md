@@ -68,7 +68,12 @@ Edit `.env` for your setup. Key variables:
 - `PORT` - Server port (default: 8080)
 - `DB_DIALECT` - `sqlite`, `postgres`, or `mysql`
 - `DB_PATH` - SQLite file (default: `qdroid.db`)
-- `POSTGRES_DSN` / `MYSQL_DSN` - DSN for Postgres/MySQL
+- `DB_USER` - Database username (Postgres/MySQL)
+- `DB_PASSWORD` - Database password (Postgres/MySQL)
+- `DB_HOST` - Database host (default: `localhost`)
+- `DB_PORT` - Database port (default: `5432` for Postgres, `3306` for MySQL)
+- `DB_NAME` - Database name
+- `DB_SSLMODE` - (Postgres only, default: `disable`)
 - `CORS_ORIGINS` - Allowed origins
 - `RABBITMQ_API_URL` - RabbitMQ management API URL (default: `http://localhost:15672`)
 - `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` - RabbitMQ management credentials

@@ -10,15 +10,14 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-var (
-	argonTime    uint32
-	argonMemory  uint32
-	argonThreads uint8
-	argonKeyLen  uint32
-	argonSaltLen uint32
-)
-
-func init() {
+func NewCrypto() *Crypto {
+	var (
+		argonTime    uint32
+		argonMemory  uint32
+		argonThreads uint8
+		argonKeyLen  uint32
+		argonSaltLen uint32
+	)
 	if v := commons.GetEnv("ARGON2_TIME", "1"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
 			argonTime = uint32(i)
@@ -44,16 +43,23 @@ func init() {
 			argonSaltLen = uint32(i)
 		}
 	}
+	return &Crypto{
+		ArgonTime:    argonTime,
+		ArgonMemory:  argonMemory,
+		ArgonThreads: argonThreads,
+		ArgonKeyLen:  argonKeyLen,
+		ArgonSaltLen: argonSaltLen,
+	}
 }
 
-func HashPassword(password string) (string, error) {
+func (c *Crypto) HashPassword(password string) (string, error) {
 	commons.Logger.Debug("Hashing password")
 	params := &argon2id.Params{
-		Memory:      argonMemory,
-		Iterations:  argonTime,
-		Parallelism: argonThreads,
-		SaltLength:  argonSaltLen,
-		KeyLength:   argonKeyLen,
+		Memory:      c.ArgonMemory,
+		Iterations:  c.ArgonTime,
+		Parallelism: c.ArgonThreads,
+		SaltLength:  c.ArgonSaltLen,
+		KeyLength:   c.ArgonKeyLen,
 	}
 	hash, err := argon2id.CreateHash(password, params)
 	if err != nil {
@@ -63,7 +69,7 @@ func HashPassword(password string) (string, error) {
 	return hash, nil
 }
 
-func VerifyPassword(password, encodedHash string) error {
+func (c *Crypto) VerifyPassword(password, encodedHash string) error {
 	commons.Logger.Debug("Verifying password")
 	match, err := argon2id.ComparePasswordAndHash(password, encodedHash)
 	if err != nil {

@@ -3,6 +3,8 @@
 package rabbitmq
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -68,7 +70,6 @@ func (c *Client) DeleteVhost(vhost string) error {
 	req.SetBasicAuth(c.Username, c.Password)
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		commons.Logger.Error("HTTP request to delete vhost failed:", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -77,5 +78,96 @@ func (c *Client) DeleteVhost(vhost string) error {
 		return fmt.Errorf("failed to delete vhost: %s", resp.Status)
 	}
 	commons.Logger.Infof("RabbitMQ vhost deleted: %s", vhost)
+	return nil
+}
+
+func (c *Client) CreateUser(username, password string, tags []string) error {
+	commons.Logger.Debugf("Creating RabbitMQ user: %s", username)
+	rel := &url.URL{Path: fmt.Sprintf("/api/users/%s", url.PathEscape(username))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	body := map[string]interface{}{
+		"password": password,
+		"tags":     tags,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to create user %s: %s", username, resp.Status)
+		return fmt.Errorf("failed to create user: %s", resp.Status)
+	}
+	return nil
+}
+
+func (c *Client) SetPermissions(vhost, username, configure, write, read string) error {
+	commons.Logger.Debugf("Setting permissions for user %s on vhost %s", username, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/permissions/%s/%s", url.PathEscape(vhost), url.PathEscape(username))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	body := map[string]string{
+		"configure": configure,
+		"write":     write,
+		"read":      read,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to set permissions for user %s on vhost %s: %s", username, vhost, resp.Status)
+		return fmt.Errorf("failed to set permissions: %s", resp.Status)
+	}
+	return nil
+}
+
+func (c *Client) DeleteUser(username string) error {
+	commons.Logger.Debugf("Deleting RabbitMQ user: %s", username)
+	rel := &url.URL{Path: fmt.Sprintf("/api/users/%s", url.PathEscape(username))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to delete user %s: %s", username, resp.Status)
+		return fmt.Errorf("failed to delete user: %s", resp.Status)
+	}
+	commons.Logger.Infof("RabbitMQ user deleted: %s", username)
 	return nil
 }

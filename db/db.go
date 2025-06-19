@@ -3,10 +3,12 @@
 package db
 
 import (
+	"fmt"
 	"os"
 	"qdroid-server/commons"
 	"qdroid-server/models"
 	"strings"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -29,27 +31,54 @@ func InitDB() {
 
 	switch dbDialect {
 	case "postgres":
-		dsn := commons.GetEnv("POSTGRES_DSN")
-		if dsn == "" {
-			commons.Logger.Error("POSTGRES_DSN environment variable is required for postgres dialect. Example: postgres://user:password@localhost:5432/qdroid")
+		user := commons.GetEnv("DB_USER")
+		pass := commons.GetEnv("DB_PASSWORD")
+		host := commons.GetEnv("DB_HOST", "localhost")
+		port := commons.GetEnv("DB_PORT", "5432")
+		dbname := commons.GetEnv("DB_NAME")
+		sslmode := commons.GetEnv("DB_SSLMODE", "disable")
+		if user == "" || pass == "" || dbname == "" {
+			commons.Logger.Error("DB_USER, DB_PASSWORD, and DB_NAME environment variables are required for postgres dialect.")
 			os.Exit(1)
 		}
+		dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, pass, host, port, dbname, sslmode)
 		commons.Logger.Debug("Connecting to PostgreSQL database")
 		dialector = postgres.Open(dsn)
-		dbInfo = "PostgreSQL database (DSN hidden)"
+		dbInfo = fmt.Sprint("postgres://", user, ":", "****", "@", host, ":", port, "/", dbname, "?sslmode=", sslmode)
 	case "mysql":
-		dsn := commons.GetEnv("MYSQL_DSN")
-		if dsn == "" {
-			commons.Logger.Error("MYSQL_DSN environment variable is required for mysql dialect. Example: user:password@tcp(localhost:3306)/qdroid?charset=utf8mb4&parseTime=True&loc=Local")
+		user := commons.GetEnv("DB_USER")
+		pass := commons.GetEnv("DB_PASSWORD")
+		host := commons.GetEnv("DB_HOST", "localhost")
+		port := commons.GetEnv("DB_PORT", "3306")
+		dbname := commons.GetEnv("DB_NAME")
+		loc, _ := time.LoadLocation("UTC")
+		params := fmt.Sprintf("charset=utf8mb4&parseTime=True&loc=%s", loc)
+		if user == "" || pass == "" || dbname == "" {
+			commons.Logger.Error("DB_USER, DB_PASSWORD, and DB_NAME environment variables are required for mysql dialect.")
 			os.Exit(1)
 		}
+
+		rootDsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/?%s", user, pass, host, port, params)
+		rootDB, err := gorm.Open(mysql.Open(rootDsn), &gorm.Config{})
+		if err != nil {
+			commons.Logger.Errorf("Failed to connect to MySQL server for DB creation: %v", err)
+			os.Exit(1)
+		}
+		createDBSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;", dbname)
+		if err := rootDB.Exec(createDBSQL).Error; err != nil {
+			commons.Logger.Errorf("Failed to create database '%s': %v", dbname, err)
+			os.Exit(1)
+		}
+		sqlDB, _ := rootDB.DB()
+		sqlDB.Close()
+
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", user, pass, host, port, dbname, params)
 		commons.Logger.Debug("Connecting to MySQL database")
 		dialector = mysql.Open(dsn)
-		dbInfo = "MySQL database (DSN hidden)"
+		dbInfo = fmt.Sprint("mysql://", user, ":", "****", "@tcp(", host, ":", port, ")/", dbname, "?charset=utf8mb4&parseTime=True&loc=", loc)
 	default:
 		commons.Logger.Debug("Connecting to SQLite database at", dbPath)
 		dialector = sqlite.Open(dbPath)
-		dbDialect = "sqlite"
 		dbInfo = dbPath
 	}
 
@@ -78,20 +107,17 @@ func InitDB() {
 		),
 	})
 	if err != nil {
-		commons.Logger.Error("Failed to connect to database:", err)
+		commons.Logger.Errorf("Failed to connect to database: %v", err)
 		os.Exit(1)
 	}
-	commons.Logger.Infof("Database connection established. %s %s, %s %s",
-		"dialect:", dbDialect,
-		"database:", dbInfo,
-	)
+	commons.Logger.Infof("Database connection established at %s", dbInfo)
 }
 
 func MigrateDB() {
 	commons.Logger.Info("Running database migrations")
 	err := Conn.AutoMigrate(models.AllModels...)
 	if err != nil {
-		commons.Logger.Error("Database migration failed:", err)
+		commons.Logger.Errorf("Database migration failed: %v", err)
 		os.Exit(1)
 	}
 	commons.Logger.Info("Database migration completed")

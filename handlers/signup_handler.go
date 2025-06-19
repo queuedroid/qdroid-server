@@ -65,7 +65,8 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
-	hash, err := crypto.HashPassword(req.Password)
+	sec := crypto.NewCrypto()
+	hash, err := sec.HashPassword(req.Password)
 	if err != nil {
 		logger.Errorf("Failed to hash password: %v", err)
 		return echo.ErrInternalServerError
@@ -86,12 +87,27 @@ func SignupHandler(c echo.Context) error {
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to create user: %v", err)
-		return echo.NewHTTPError(http.StatusConflict, "User already exists")
+		return echo.NewHTTPError(http.StatusConflict, "The email is already registered, please try another one.")
 	}
 
 	if err := rmqClient.CreateVhost(user.Email); err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to create RabbitMQ vhost: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := rmqClient.CreateUser(user.Email, req.Password, []string{"management"}); err != nil {
+		rmqClient.DeleteVhost(user.Email)
+		tx.Rollback()
+		logger.Errorf("Failed to create RabbitMQ user: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := rmqClient.SetPermissions(user.Email, user.Email, ".*", ".*", ".*"); err != nil {
+		rmqClient.DeleteUser(user.Email)
+		rmqClient.DeleteVhost(user.Email)
+		tx.Rollback()
+		logger.Errorf("Failed to set RabbitMQ permissions: %v", err)
 		return echo.ErrInternalServerError
 	}
 
