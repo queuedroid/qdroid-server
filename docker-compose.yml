@@ -1,0 +1,59 @@
+services:
+  qdroid-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      - DB_DIALECT
+      - DB_HOST=mariadb
+      - DB_PORT
+      - DB_NAME
+      - DB_USER
+      - DB_PASSWORD
+      - LOG_LEVEL
+      - JWT_SECRET
+      - RABBITMQ_API_URL='http://rabbitmq:15672'
+      - RABBITMQ_USERNAME
+      - RABBITMQ_PASSWORD
+      - ARGON2_TIME
+      - ARGON2_MEMORY
+      - ARGON2_THREADS
+      - ARGON2_KEYLEN
+      - ARGON2_SALTLEN
+    depends_on:
+      - rabbitmq
+      - mariadb
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+
+  mariadb:
+    restart: unless-stopped
+    image: mariadb:11.4
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_PASSWORD}
+      - MARIADB_USER=${DB_USER}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+      - MARIADB_DATABASE=${DB_NAME}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - qdroid-network
+
+volumes:
+  mariadb-data:
+
+networks:
+  qdroid-network:

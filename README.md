@@ -8,6 +8,7 @@ QueueDroid Server is a backend service for managing SMS message queues.
 
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
+- [Docker](#docker)
 - [Configuration](#configuration)
 - [Running](#running)
 - [Reference](#reference)
@@ -21,6 +22,7 @@ QueueDroid Server is a backend service for managing SMS message queues.
 - **Make** (for running setup/build commands)
 - **Database**: SQLite (default), [PostgreSQL](https://www.postgresql.org/download/), or [MySQL](https://dev.mysql.com/downloads/)
 - **Broker**: [RabbitMQ](https://www.rabbitmq.com/download.html) (required)
+- **Docker** and **Docker Compose** (optional, for containerized setup)
 
 ---
 
@@ -58,6 +60,52 @@ go run server.go --env-file .env --migrate-db
 > ```
 >
 > If no `--env-file` is provided, configuration values are read directly from the environment variables.
+
+---
+
+## Docker
+
+You can use Docker and Docker Compose to build and run the server.
+
+### Build and Run with Docker
+
+Build the Docker image:
+
+```bash
+docker build -t qdroid-server .
+```
+
+Run the container (non-detached mode):
+
+```bash
+docker run -p 8080:8080 --env-file .env qdroid-server
+```
+
+Run the container (detached mode):
+
+```bash
+docker run -d -p 8080:8080 --env-file .env qdroid-server
+```
+
+### Build and Run with Docker Compose
+
+Run the services using Docker Compose (non-detached mode):
+
+```bash
+docker compose up
+```
+
+Run the services using Docker Compose (detached mode):
+
+```bash
+docker compose up -d
+```
+
+Stop the services:
+
+```bash
+docker compose down
+```
 
 ---
 
