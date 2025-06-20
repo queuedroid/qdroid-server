@@ -25,12 +25,16 @@ services:
     depends_on:
       - rabbitmq
       - mariadb
+    networks:
+      - qdroid-network
 
   rabbitmq:
     image: rabbitmq:3-management
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    networks:
+      - qdroid-network
 
   mariadb:
     restart: unless-stopped
