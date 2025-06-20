@@ -4,6 +4,56 @@
         "contact": {}
     },
     "paths": {
+        "/v1/auth/apikey": {
+            "get": {
+                "description": "Retrieves the API key for the authenticated user.\nNote: The Authorization header must contain the session_token obtained from the login endpoint, in the format \"Bearer {token}\".",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get a user's API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer {token} (session_token from login)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API key retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GetOneAPIKeyResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns a token.",
@@ -114,6 +164,32 @@
             "type": "object",
             "properties": {
                 "message": {}
+            }
+        },
+        "handlers.GetOneAPIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "My API Key"
+                },
+                "last_used_at": {
+                    "type": "string"
+                },
+                "seen": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "token": {
+                    "type": "string",
+                    "example": "sample_api_key_token"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
             }
         },
         "handlers.LoginRequest": {

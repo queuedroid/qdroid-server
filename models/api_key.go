@@ -12,6 +12,7 @@ type APIKey struct {
 	ID         uint    `gorm:"primaryKey"`
 	Token      string  `gorm:"not null;uniqueIndex"`
 	Label      *string `gorm:"default:null"`
+	Seen       *bool   `gorm:"default:false"`
 	LastUsedAt *time.Time
 	ExpiresAt  *time.Time
 	CreatedAt  time.Time

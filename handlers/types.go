@@ -2,6 +2,10 @@
 
 package handlers
 
+import (
+	"time"
+)
+
 // swagger:model SignupRequest
 type SignupRequest struct {
 	// User's password
@@ -37,4 +41,13 @@ type LoginResponse struct {
 	SessionToken string `json:"session_token" example:"sample_session_token"`
 	// Message indicating successful login
 	Message string `json:"message" example:"Login successful"`
+}
+
+type GetOneAPIKeyResponse struct {
+	Token      string     `json:"token,omitempty" example:"sample_api_key_token"`
+	Label      *string    `json:"label,omitempty" example:"My API Key"`
+	Seen       *bool      `json:"seen,omitempty" example:"false"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
