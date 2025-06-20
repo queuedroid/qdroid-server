@@ -1,5 +1,6 @@
 services:
   qdroid-server:
+    container_name: qdroid-server
     build:
       context: .
       dockerfile: Dockerfile
@@ -29,6 +30,7 @@ services:
       - qdroid-network
 
   rabbitmq:
+    container_name: rabbitmq
     image: rabbitmq:3-management
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
@@ -37,6 +39,7 @@ services:
       - qdroid-network
 
   mariadb:
+    container_name: mariadb
     restart: unless-stopped
     image: mariadb:11.4
     volumes:
