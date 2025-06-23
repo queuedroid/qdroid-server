@@ -56,12 +56,18 @@ func LoginHandler(c echo.Context) error {
 	newCrypto := crypto.NewCrypto()
 	user := models.User{}
 	err := db.Conn.Where("email = ?", req.Email).First(&user).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Error("User not found.")
-		return &echo.HTTPError{
-			Code:    http.StatusUnauthorized,
-			Message: "Credentials are incorrect, please check your email and password",
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("User not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusUnauthorized,
+				Message: "Credentials are incorrect, please check your email and password",
+			}
 		}
+
+		logger.Errorf("Failed to find user: %v", err)
+		return echo.ErrInternalServerError
 	}
 	invalid_password := newCrypto.VerifyPassword(req.Password, user.Password)
 	if invalid_password != nil {
