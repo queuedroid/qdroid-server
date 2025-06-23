@@ -35,7 +35,8 @@ services:
   rabbitmq:
     restart: unless-stopped
     container_name: rabbitmq
-    image: rabbitmq:3-management
+    hostname: rabbitmq
+    image: rabbitmq:4-management
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     ports:
