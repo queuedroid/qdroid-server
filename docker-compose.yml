@@ -35,7 +35,7 @@ services:
   rabbitmq:
     restart: unless-stopped
     container_name: rabbitmq
-    hostname: rabbitmq
+    hostname: queuedroid.com
     image: rabbitmq:4-management
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
