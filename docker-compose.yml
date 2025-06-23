@@ -1,5 +1,6 @@
 services:
   qdroid-server:
+    restart: unless-stopped
     container_name: qdroid-server
     build:
       context: .
@@ -32,10 +33,14 @@ services:
       - qdroid-network
 
   rabbitmq:
+    restart: unless-stopped
     container_name: rabbitmq
     image: rabbitmq:3-management
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
@@ -48,8 +53,8 @@ services:
       - qdroid-network
 
   mariadb:
-    container_name: mariadb
     restart: unless-stopped
+    container_name: mariadb
     image: mariadb:11.4
     volumes:
       - mariadb-data:/var/lib/mysql
