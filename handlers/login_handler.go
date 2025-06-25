@@ -78,7 +78,7 @@ func LoginHandler(c echo.Context) error {
 		}
 	}
 
-	session_token, err := crypto.GenerateHexID("st_long_", 32)
+	session_token, err := crypto.GenerateRandomString("st_long_", 32, "hex")
 	if err != nil {
 		logger.Errorf("Failed to generate session token: %v", err)
 		return echo.ErrInternalServerError

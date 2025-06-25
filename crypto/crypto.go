@@ -4,6 +4,7 @@ package crypto
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"qdroid-server/commons"
@@ -83,11 +84,20 @@ func (c *Crypto) VerifyPassword(password, encodedHash string) error {
 	return nil
 }
 
-func GenerateHexID(prefix string, length int) (string, error) {
+func GenerateRandomString(prefix string, length int, encoding string) (string, error) {
+	supported_encodings := []string{"hex", "base64"}
+
 	b := make([]byte, length)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 
-	return prefix + hex.EncodeToString(b), nil
+	switch encoding {
+	case "hex":
+		return prefix + hex.EncodeToString(b), nil
+	case "base64":
+		return prefix + base64.StdEncoding.EncodeToString(b), nil
+	default:
+		return "", fmt.Errorf("unsupported encoding: %s, Supported encodings are: %s", encoding, supported_encodings)
+	}
 }

@@ -3,24 +3,6 @@ definitions:
     properties:
       message: {}
     type: object
-  handlers.GetOneAPIKeyResponse:
-    properties:
-      created_at:
-        type: string
-      label:
-        example: My API Key
-        type: string
-      last_used_at:
-        type: string
-      seen:
-        example: false
-        type: boolean
-      token:
-        example: sample_api_key_token
-        type: string
-      updated_at:
-        type: string
-    type: object
   handlers.LoginRequest:
     properties:
       email:
@@ -76,41 +58,6 @@ definitions:
 info:
   contact: {}
 paths:
-  /v1/auth/apikey:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        Retrieves the API key for the authenticated user.
-        Note: The Authorization header must contain the session_token obtained from the login endpoint, in the format "Bearer {token}".
-      parameters:
-      - description: Bearer {token} (session_token from login)
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: API key retrieved successfully
-          schema:
-            $ref: '#/definitions/handlers.GetOneAPIKeyResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/echo.HTTPError'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/echo.HTTPError'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/echo.HTTPError'
-      summary: Get a user's API key
-      tags:
-      - auth
   /v1/auth/login:
     post:
       consumes:

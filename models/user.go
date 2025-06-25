@@ -11,14 +11,15 @@ import (
 var AllModels []any
 
 type User struct {
-	ID          uint    `gorm:"primaryKey"`
-	AccountID   string  `gorm:"not null;uniqueIndex"`
-	Email       string  `gorm:"not null;uniqueIndex"`
-	Password    string  `gorm:"not null"`
-	PhoneNumber *string `gorm:"default:null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	ID           uint    `gorm:"primaryKey"`
+	AccountID    string  `gorm:"not null;uniqueIndex"`
+	AccountToken string  `gorm:"not null;index"`
+	Email        string  `gorm:"not null;uniqueIndex"`
+	Password     string  `gorm:"not null"`
+	PhoneNumber  *string `gorm:"default:null"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
 func init() {
