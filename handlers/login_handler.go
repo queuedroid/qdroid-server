@@ -88,10 +88,16 @@ func LoginHandler(c echo.Context) error {
 	session_lastused := time.Now()
 	session := models.Session{}
 
+	user_agent := c.Request().Header.Get("User-Agent")
+	ip_address := c.RealIP()
+
 	if err := db.Conn.Where("user_id = ?", user.ID).Assign(models.Session{
+		UserID:     user.ID,
 		Token:      session_token,
 		LastUsedAt: &session_lastused,
 		ExpiresAt:  &session_exp,
+		UserAgent:  &user_agent,
+		IPAddress:  &ip_address,
 	}).FirstOrCreate(&session).Error; err != nil {
 		logger.Errorf("Failed to create session: %v", err)
 		return echo.ErrInternalServerError

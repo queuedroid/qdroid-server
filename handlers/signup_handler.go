@@ -98,7 +98,7 @@ func SignupHandler(c echo.Context) error {
 		AccountToken: att,
 		Email:        req.Email,
 		Password:     hash,
-		PhoneNumber:  &req.PhoneNumber,
+		PhoneNumber:  req.PhoneNumber,
 	}
 
 	tx := db.Conn.Begin()

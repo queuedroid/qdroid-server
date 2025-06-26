@@ -86,7 +86,7 @@ func (c *Client) CreateUser(username, password string, tags []string) error {
 	rel := &url.URL{Path: fmt.Sprintf("/api/users/%s", url.PathEscape(username))}
 	u := c.BaseURL.ResolveReference(rel)
 
-	body := map[string]interface{}{
+	body := map[string]any{
 		"password": password,
 		"tags":     tags,
 	}
@@ -170,4 +170,92 @@ func (c *Client) DeleteUser(username string) error {
 	}
 	commons.Logger.Infof("RabbitMQ user deleted: %s", username)
 	return nil
+}
+
+func (c *Client) CreateExchange(vhost, exchange, exchangeType string, durable bool) error {
+	commons.Logger.Debugf("Creating RabbitMQ exchange: %s in vhost: %s", exchange, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/exchanges/%s/%s", url.PathEscape(vhost), url.PathEscape(exchange))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	body := map[string]any{
+		"type":    exchangeType,
+		"durable": durable,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to create exchange %s in vhost %s: %s", exchange, vhost, resp.Status)
+		return fmt.Errorf("failed to create exchange: %s", resp.Status)
+	}
+	return nil
+}
+
+func (c *Client) DeleteExchange(vhost, exchange string) error {
+	commons.Logger.Debugf("Deleting RabbitMQ exchange: %s in vhost: %s", exchange, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/exchanges/%s/%s", url.PathEscape(vhost), url.PathEscape(exchange))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to delete exchange %s in vhost %s: %s", exchange, vhost, resp.Status)
+		return fmt.Errorf("failed to delete exchange: %s", resp.Status)
+	}
+	commons.Logger.Infof("RabbitMQ exchange deleted: %s in vhost: %s", exchange, vhost)
+	return nil
+}
+
+func (c *Client) GetExchangeByName(vhost, exchange string) (map[string]any, error) {
+	commons.Logger.Debugf("Fetching RabbitMQ exchange: %s in vhost: %s", exchange, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/exchanges/%s/%s", url.PathEscape(vhost), url.PathEscape(exchange))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		commons.Logger.Errorf("Failed to fetch exchange %s in vhost %s: %s", exchange, vhost, resp.Status)
+		return nil, fmt.Errorf("failed to fetch exchange: %s", resp.Status)
+	}
+
+	var exchangeData map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&exchangeData); err != nil {
+		return nil, err
+	}
+
+	commons.Logger.Infof("Fetched exchange: %s in vhost: %s", exchange, vhost)
+	return exchangeData, nil
 }

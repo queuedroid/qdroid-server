@@ -2,10 +2,6 @@
 
 package handlers
 
-import (
-	"time"
-)
-
 // swagger:model SignupRequest
 type SignupRequest struct {
 	// User's password
@@ -15,7 +11,7 @@ type SignupRequest struct {
 	// required: true
 	Email string `json:"email" example:"user@example.com"`
 	// Optional phone number
-	PhoneNumber string `json:"phone_number" example:"+2371234567890"`
+	PhoneNumber *string `json:"phone_number" example:"+2371234567890"`
 }
 
 // swagger:model SignupResponse
@@ -43,11 +39,26 @@ type LoginResponse struct {
 	Message string `json:"message" example:"Login successful"`
 }
 
-type GetOneAPIKeyResponse struct {
-	Token      string     `json:"token,omitempty" example:"sample_api_key_token"`
-	Label      *string    `json:"label,omitempty" example:"My API Key"`
-	Seen       *bool      `json:"seen,omitempty" example:"false"`
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
+// swagger:model CreateExchangeRequest
+type CreateExchangeRequest struct {
+	// Label for the exchange
+	Label string `json:"label" example:"OTP Messages"`
+	// Description of the exchange
+	Description *string `json:"description" example:"This exchange handles OTP messages."`
+}
+
+// swagger:model CreateExchangeResponse
+type CreateExchangeResponse struct {
+	// ID of the created exchange
+	ExchangeID string `json:"exchange_id" example:"ex_jkdfkjdfkdfjkd"`
+	// Label of the created exchange
+	Label string `json:"label" example:"OTP Messages"`
+	// Description of the created exchange
+	Description *string `json:"description" example:"This exchange handles OTP messages."`
+	// Timestamp of when the exchange was created
+	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
+	// Timestamp of when the exchange was last updated
+	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
+	// Message indicating successful creation
+	Message string `json:"message" example:"Exchange created successfully"`
 }

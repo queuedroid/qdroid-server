@@ -11,6 +11,7 @@ import (
 	"qdroid-server/routes"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -19,6 +20,8 @@ import (
 )
 
 func main() {
+	time.Local = time.UTC
+
 	commons.LoadEnvFile()
 	commons.InitLogger()
 

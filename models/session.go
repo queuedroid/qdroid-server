@@ -10,9 +10,9 @@ import (
 
 type Session struct {
 	ID         uint    `gorm:"primaryKey"`
-	Token      string  `gorm:"not null;uniqueIndex"`
-	IPAddress  *string `gorm:"default:null"`
-	UserAgent  *string `gorm:"default:null"`
+	Token      string  `gorm:"size:255;not null;uniqueIndex"`
+	IPAddress  *string `gorm:"size:255;default:null"`
+	UserAgent  *string `gorm:"size:255;default:null"`
 	LastUsedAt *time.Time
 	ExpiresAt  *time.Time
 	CreatedAt  time.Time
