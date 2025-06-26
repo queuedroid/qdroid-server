@@ -12,6 +12,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// SignupHandler godoc
+// @Summary      Create a new exchange
+// @Description  Creates a new exchange for the user.
+// @Tags         exchanges
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        createExchangeRequest  body  CreateExchangeRequest  true  "Create exchange request payload"
+// @Success      201 {object} CreateExchangeResponse "Exchange created successfully"
+// @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      409 {object} echo.HTTPError     "Duplicate exchange label"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/ [post]
 func CreateExchangeHandler(c echo.Context) error {
 	logger := c.Logger()
 

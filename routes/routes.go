@@ -15,6 +15,6 @@ func RegisterRoutes(e *echo.Echo) {
 	api_v1 := e.Group("/v1")
 	api_v1.POST("/auth/signup", handlers.SignupHandler)
 	api_v1.POST("/auth/login", handlers.LoginHandler)
-	api_v1.POST("/exchange", handlers.CreateExchangeHandler, middlewares.VerifySessionMiddleware)
+	api_v1.POST("/exchanges/", handlers.CreateExchangeHandler, middlewares.VerifySessionMiddleware)
 	commons.Logger.Info("v1 routes registered successfully")
 }

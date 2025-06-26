@@ -3,6 +3,44 @@ definitions:
     properties:
       message: {}
     type: object
+  handlers.CreateExchangeRequest:
+    properties:
+      description:
+        description: Description of the exchange
+        example: This exchange handles OTP messages.
+        type: string
+      label:
+        description: Label for the exchange
+        example: OTP Messages
+        type: string
+    type: object
+  handlers.CreateExchangeResponse:
+    properties:
+      created_at:
+        description: Timestamp of when the exchange was created
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      description:
+        description: Description of the created exchange
+        example: This exchange handles OTP messages.
+        type: string
+      exchange_id:
+        description: ID of the created exchange
+        example: ex_jkdfkjdfkdfjkd
+        type: string
+      label:
+        description: Label of the created exchange
+        example: OTP Messages
+        type: string
+      message:
+        description: Message indicating successful creation
+        example: Exchange created successfully
+        type: string
+      updated_at:
+        description: Timestamp of when the exchange was last updated
+        example: "2023-10-01T12:00:00Z"
+        type: string
+    type: object
   handlers.LoginRequest:
     properties:
       email:
@@ -126,4 +164,51 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /v1/exchanges/:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new exchange for the user.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Create exchange request payload
+        in: body
+        name: createExchangeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateExchangeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Exchange created successfully
+          schema:
+            $ref: '#/definitions/handlers.CreateExchangeResponse'
+        "400":
+          description: Bad request, missing required fields
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "409":
+          description: Duplicate exchange label
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Create a new exchange
+      tags:
+      - exchanges
 swagger: "2.0"

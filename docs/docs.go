@@ -118,6 +118,77 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/exchanges/": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new exchange for the user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchanges"
+                ],
+                "summary": "Create a new exchange",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Create exchange request payload",
+                        "name": "createExchangeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateExchangeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Exchange created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateExchangeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicate exchange label",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -125,6 +196,56 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {}
+            }
+        },
+        "handlers.CreateExchangeRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Description of the exchange",
+                    "type": "string",
+                    "example": "This exchange handles OTP messages."
+                },
+                "label": {
+                    "description": "Label for the exchange",
+                    "type": "string",
+                    "example": "OTP Messages"
+                }
+            }
+        },
+        "handlers.CreateExchangeResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp of when the exchange was created",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "description": {
+                    "description": "Description of the created exchange",
+                    "type": "string",
+                    "example": "This exchange handles OTP messages."
+                },
+                "exchange_id": {
+                    "description": "ID of the created exchange",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd"
+                },
+                "label": {
+                    "description": "Label of the created exchange",
+                    "type": "string",
+                    "example": "OTP Messages"
+                },
+                "message": {
+                    "description": "Message indicating successful creation",
+                    "type": "string",
+                    "example": "Exchange created successfully"
+                },
+                "updated_at": {
+                    "description": "Timestamp of when the exchange was last updated",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                }
             }
         },
         "handlers.LoginRequest": {
