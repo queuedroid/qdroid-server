@@ -120,6 +120,63 @@ const docTemplate = `{
             }
         },
         "/v1/exchanges/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all exchanges for the authenticated user, paginated.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchanges"
+                ],
+                "summary": "Get all exchanges (paginated)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of exchanges",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ExchangeListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -191,6 +248,64 @@ const docTemplate = `{
             }
         },
         "/v1/exchanges/{exchange_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a single exchange by its ID for the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchanges"
+                ],
+                "summary": "Get a single exchange",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exchange ID",
+                        "name": "exchange_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exchange details retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ExchangeDetails"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Exchange not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
@@ -290,7 +405,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer token for authentication.",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -442,6 +558,61 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ExchangeDetails": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp of when the exchange was created",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "description": {
+                    "description": "Description of the exchange",
+                    "type": "string",
+                    "example": "This exchange handles OTP messages."
+                },
+                "exchange_id": {
+                    "description": "ID of the exchange",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd"
+                },
+                "label": {
+                    "description": "Label of the exchange",
+                    "type": "string",
+                    "example": "OTP Messages"
+                },
+                "updated_at": {
+                    "description": "Timestamp of when the exchange was last updated",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                }
+            }
+        },
+        "handlers.ExchangeListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of exchanges",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.ExchangeDetails"
+                    }
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "Exchanges retrieved successfully"
+                },
+                "pagination": {
+                    "description": "Pagination details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PaginationDetails"
+                        }
+                    ]
+                }
+            }
+        },
         "handlers.GetUserResponse": {
             "type": "object",
             "properties": {
@@ -499,6 +670,27 @@ const docTemplate = `{
                     "description": "Authentication session token\nThis token is used for subsequent authenticated requests.\nIt should be stored securely by the client.\nShould be used in the Authorization header as a Bearer token.",
                     "type": "string",
                     "example": "sample_session_token"
+                }
+            }
+        },
+        "handlers.PaginationDetails": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "description": "Current page number",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "description": "Page size",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "Total number of items",
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "description": "Total number of pages",
+                    "type": "integer"
                 }
             }
         },

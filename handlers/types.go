@@ -91,10 +91,8 @@ type DeleteExchangeResponse struct {
 	Message string `json:"message" example:"Exchange deleted successfully"`
 }
 
-// swagger:model PaginationResponse
-type PaginationResponse struct {
-	// Paginated data
-	Data interface{} `json:"data"`
+// swagger:model PaginationDetails
+type PaginationDetails struct {
 	// Current page number
 	Page int `json:"page"`
 	// Page size
@@ -117,4 +115,14 @@ type ExchangeDetails struct {
 	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
 	// Timestamp of when the exchange was last updated
 	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
+}
+
+// swagger:model ExchangeListResponse
+type ExchangeListResponse struct {
+	// List of exchanges
+	Data []ExchangeDetails `json:"data"`
+	// Pagination details
+	Pagination PaginationDetails `json:"pagination"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"Exchanges retrieved successfully"`
 }

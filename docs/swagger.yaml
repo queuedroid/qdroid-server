@@ -41,6 +41,45 @@ definitions:
         example: "2023-10-01T12:00:00Z"
         type: string
     type: object
+  handlers.ExchangeDetails:
+    properties:
+      created_at:
+        description: Timestamp of when the exchange was created
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      description:
+        description: Description of the exchange
+        example: This exchange handles OTP messages.
+        type: string
+      exchange_id:
+        description: ID of the exchange
+        example: ex_jkdfkjdfkdfjkd
+        type: string
+      label:
+        description: Label of the exchange
+        example: OTP Messages
+        type: string
+      updated_at:
+        description: Timestamp of when the exchange was last updated
+        example: "2023-10-01T12:00:00Z"
+        type: string
+    type: object
+  handlers.ExchangeListResponse:
+    properties:
+      data:
+        description: List of exchanges
+        items:
+          $ref: '#/definitions/handlers.ExchangeDetails'
+        type: array
+      message:
+        description: Message indicating successful retrieval
+        example: Exchanges retrieved successfully
+        type: string
+      pagination:
+        allOf:
+        - $ref: '#/definitions/handlers.PaginationDetails'
+        description: Pagination details
+    type: object
   handlers.GetUserResponse:
     properties:
       account_id:
@@ -89,6 +128,21 @@ definitions:
           Should be used in the Authorization header as a Bearer token.
         example: sample_session_token
         type: string
+    type: object
+  handlers.PaginationDetails:
+    properties:
+      page:
+        description: Current page number
+        type: integer
+      page_size:
+        description: Page size
+        type: integer
+      total:
+        description: Total number of items
+        type: integer
+      total_pages:
+        description: Total number of pages
+        type: integer
     type: object
   handlers.SignupRequest:
     properties:
@@ -199,6 +253,44 @@ paths:
       tags:
       - auth
   /v1/exchanges/:
+    get:
+      description: Retrieves all exchanges for the authenticated user, paginated.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of exchanges
+          schema:
+            $ref: '#/definitions/handlers.ExchangeListResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get all exchanges (paginated)
+      tags:
+      - exchanges
     post:
       consumes:
       - application/json
@@ -249,7 +341,9 @@ paths:
     delete:
       description: Deletes an existing exchange.
       parameters:
-      - description: Bearer token for authentication.
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
         in: header
         name: Authorization
         required: true
@@ -283,6 +377,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete an exchange
+      tags:
+      - exchanges
+    get:
+      description: Retrieves a single exchange by its ID for the authenticated user.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exchange details retrieved successfully
+          schema:
+            $ref: '#/definitions/handlers.ExchangeDetails'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get a single exchange
       tags:
       - exchanges
     put:

@@ -174,6 +174,14 @@ func UpdateExchangeHandler(c echo.Context) error {
 		}
 	}
 
+	if req.Label == "" {
+		logger.Error("Label is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "label field is required",
+		}
+	}
+
 	exchange := models.Exchange{}
 	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -225,7 +233,7 @@ func UpdateExchangeHandler(c echo.Context) error {
 // @Tags         exchanges
 // @Produce      json
 // @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer token for authentication."
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
 // @Param        exchange_id   path    string  true  "Exchange ID"
 // @Success      200 {object} map[string]string "Exchange deleted successfully"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
@@ -314,7 +322,7 @@ func DeleteExchangeHandler(c echo.Context) error {
 // @Tags         exchanges
 // @Produce      json
 // @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer token for authentication."
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
 // @Param        exchange_id   path    string  true  "Exchange ID"
 // @Success      200 {object} ExchangeDetails "Exchange details retrieved successfully"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
@@ -362,10 +370,10 @@ func GetExchangeHandler(c echo.Context) error {
 // @Tags         exchanges
 // @Produce      json
 // @Security     BearerAuth
-// @Param        Authorization  header  string  true  "Bearer token for authentication."
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
 // @Param        page     query   int  false  "Page number (default 1)"
 // @Param        page_size query  int  false  "Page size (default 10, max 100)"
-// @Success      200 {object} PaginationResponse "Paginated list of exchanges"
+// @Success      200 {object} ExchangeListResponse "Paginated list of exchanges"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
 // @Router       /v1/exchanges/ [get]
@@ -418,11 +426,14 @@ func GetAllExchangesHandler(c echo.Context) error {
 	}
 
 	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
-	return c.JSON(http.StatusOK, PaginationResponse{
-		Data:       data,
-		Page:       page,
-		PageSize:   pageSize,
-		Total:      total,
-		TotalPages: totalPages,
+	return c.JSON(http.StatusOK, ExchangeListResponse{
+		Data: data,
+		Pagination: PaginationDetails{
+			Page:       page,
+			PageSize:   pageSize,
+			Total:      total,
+			TotalPages: totalPages,
+		},
+		Message: "Exchanges retrieved successfully",
 	})
 }
