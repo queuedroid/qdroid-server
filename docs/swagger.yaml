@@ -116,6 +116,17 @@ definitions:
         example: Signup successful
         type: string
     type: object
+  handlers.UpdateExchangeRequest:
+    properties:
+      description:
+        description: New description for the exchange
+        example: This exchange handles new OTP messages.
+        type: string
+      label:
+        description: New label for the exchange
+        example: New OTP Messages
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -232,6 +243,101 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a new exchange
+      tags:
+      - exchanges
+  /v1/exchanges/{exchange_id}:
+    delete:
+      description: Deletes an existing exchange.
+      parameters:
+      - description: Bearer token for authentication.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exchange deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Delete an exchange
+      tags:
+      - exchanges
+    put:
+      consumes:
+      - application/json
+      description: Update an existing exchange..
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      - description: Update exchange request payload
+        in: body
+        name: updateExchangeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateExchangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exchange updated successfully
+          schema:
+            $ref: '#/definitions/handlers.CreateExchangeResponse'
+        "400":
+          description: Bad request, missing required fields
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "409":
+          description: Duplicate exchange label detected
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Update an exchange
       tags:
       - exchanges
   /v1/users/:

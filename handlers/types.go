@@ -76,3 +76,17 @@ type GetUserResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"User retrieved successfully"`
 }
+
+// swagger:model UpdateExchangeRequest
+type UpdateExchangeRequest struct {
+	// New label for the exchange
+	Label string `json:"label" example:"New OTP Messages"`
+	// New description for the exchange
+	Description *string `json:"description" example:"This exchange handles new OTP messages."`
+}
+
+// swagger:model DeleteExchangeResponse
+type DeleteExchangeResponse struct {
+	// Message indicating successful deletion
+	Message string `json:"message" example:"Exchange deleted successfully"`
+}
