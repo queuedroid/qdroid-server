@@ -106,9 +106,6 @@ func main() {
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: allowedOrigins,
-		Skipper: func(c echo.Context) bool {
-			return debugMode
-		},
 	}))
 
 	e.Use(middleware.Recover())

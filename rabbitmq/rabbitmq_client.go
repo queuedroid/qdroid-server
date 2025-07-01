@@ -14,7 +14,7 @@ import (
 
 func NewClient(c RabbitMQConfig) (*Client, error) {
 	if c.baseURL == "" {
-		c.baseURL = commons.GetEnv("RABBITMQ_API_URL", "http://localhost:1567211")
+		c.baseURL = commons.GetEnv("RABBITMQ_API_URL", "http://localhost:15672")
 	}
 	if c.username == "" {
 		c.username = commons.GetEnv("RABBITMQ_USERNAME", "guest")
