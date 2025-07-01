@@ -4,6 +4,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"qdroid-server/crypto"
 	"qdroid-server/db"
@@ -304,5 +305,124 @@ func DeleteExchangeHandler(c echo.Context) error {
 	logger.Infof("Exchange deleted successfully.")
 	return c.JSON(http.StatusOK, DeleteExchangeResponse{
 		Message: "Successfully deleted exchange",
+	})
+}
+
+// GetExchangeHandler godoc
+// @Summary      Get a single exchange
+// @Description  Retrieves a single exchange by its ID for the authenticated user.
+// @Tags         exchanges
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication."
+// @Param        exchange_id   path    string  true  "Exchange ID"
+// @Success      200 {object} ExchangeDetails "Exchange details retrieved successfully"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      404 {object} echo.HTTPError     "Exchange not found"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/{exchange_id} [get]
+func GetExchangeHandler(c echo.Context) error {
+	logger := c.Logger()
+	exchangeID := c.Param("exchange_id")
+
+	session, ok := c.Get("session").(models.Session)
+	if !ok {
+		logger.Error("Session not found in context.")
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired session token, please login again",
+		}
+	}
+
+	exchange := models.Exchange{}
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Exchange not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Exchange not found",
+			}
+		}
+		logger.Errorf("Failed to find exchange: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, ExchangeDetails{
+		ExchangeID:  exchange.ExchangeID,
+		Label:       exchange.Label,
+		Description: exchange.Description,
+		CreatedAt:   exchange.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		UpdatedAt:   exchange.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+	})
+}
+
+// GetAllExchangesHandler godoc
+// @Summary      Get all exchanges (paginated)
+// @Description  Retrieves all exchanges for the authenticated user, paginated.
+// @Tags         exchanges
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication."
+// @Param        page     query   int  false  "Page number (default 1)"
+// @Param        page_size query  int  false  "Page size (default 10, max 100)"
+// @Success      200 {object} PaginationResponse "Paginated list of exchanges"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/ [get]
+func GetAllExchangesHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	session, ok := c.Get("session").(models.Session)
+	if !ok {
+		logger.Error("Session not found in context.")
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired session token, please login again",
+		}
+	}
+
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if _, err := fmt.Sscanf(p, "%d", &page); err != nil || page < 1 {
+			page = 1
+		}
+	}
+	if ps := c.QueryParam("page_size"); ps != "" {
+		if _, err := fmt.Sscanf(ps, "%d", &pageSize); err != nil || pageSize < 1 {
+			pageSize = 10
+		}
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	var total int64
+	var exchanges []models.Exchange
+	db.Conn.Model(&models.Exchange{}).Where("user_id = ?", session.UserID).Count(&total)
+	db.Conn.Where("user_id = ?", session.UserID).
+		Order("created_at desc").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&exchanges)
+
+	var data []ExchangeDetails
+	for _, ex := range exchanges {
+		data = append(data, ExchangeDetails{
+			ExchangeID:  ex.ExchangeID,
+			Label:       ex.Label,
+			Description: ex.Description,
+			CreatedAt:   ex.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			UpdatedAt:   ex.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		})
+	}
+
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	return c.JSON(http.StatusOK, PaginationResponse{
+		Data:       data,
+		Page:       page,
+		PageSize:   pageSize,
+		Total:      total,
+		TotalPages: totalPages,
 	})
 }

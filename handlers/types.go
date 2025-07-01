@@ -90,3 +90,31 @@ type DeleteExchangeResponse struct {
 	// Message indicating successful deletion
 	Message string `json:"message" example:"Exchange deleted successfully"`
 }
+
+// swagger:model PaginationResponse
+type PaginationResponse struct {
+	// Paginated data
+	Data interface{} `json:"data"`
+	// Current page number
+	Page int `json:"page"`
+	// Page size
+	PageSize int `json:"page_size"`
+	// Total number of items
+	Total int64 `json:"total"`
+	// Total number of pages
+	TotalPages int `json:"total_pages"`
+}
+
+// swagger:model ExchangeDetails
+type ExchangeDetails struct {
+	// ID of the exchange
+	ExchangeID string `json:"exchange_id" example:"ex_jkdfkjdfkdfjkd"`
+	// Label of the exchange
+	Label string `json:"label" example:"OTP Messages"`
+	// Description of the exchange
+	Description *string `json:"description" example:"This exchange handles OTP messages."`
+	// Timestamp of when the exchange was created
+	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
+	// Timestamp of when the exchange was last updated
+	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
+}
