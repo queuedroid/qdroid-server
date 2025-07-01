@@ -189,6 +189,56 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/users/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the details of the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get user details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GetUserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -245,6 +295,36 @@ const docTemplate = `{
                     "description": "Timestamp of when the exchange was last updated",
                     "type": "string",
                     "example": "2023-10-01T12:00:00Z"
+                }
+            }
+        },
+        "handlers.GetUserResponse": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "description": "Unique identifier for the user",
+                    "type": "string",
+                    "example": "acc_1234567890"
+                },
+                "account_token": {
+                    "description": "Authentication token for the user's account",
+                    "type": "string",
+                    "example": "sample_account_token"
+                },
+                "email": {
+                    "description": "Email address associated with the user's account",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "User retrieved successfully"
+                },
+                "phone_number": {
+                    "description": "Phone number associated with the user's account",
+                    "type": "string",
+                    "example": "+2371234567890"
                 }
             }
         },

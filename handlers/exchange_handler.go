@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// SignupHandler godoc
+// CreateExchangeHandler godoc
 // @Summary      Create a new exchange
 // @Description  Creates a new exchange for the user.
 // @Tags         exchanges

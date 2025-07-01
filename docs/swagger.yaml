@@ -41,6 +41,29 @@ definitions:
         example: "2023-10-01T12:00:00Z"
         type: string
     type: object
+  handlers.GetUserResponse:
+    properties:
+      account_id:
+        description: Unique identifier for the user
+        example: acc_1234567890
+        type: string
+      account_token:
+        description: Authentication token for the user's account
+        example: sample_account_token
+        type: string
+      email:
+        description: Email address associated with the user's account
+        example: user@example.com
+        type: string
+      message:
+        description: Message indicating successful retrieval
+        example: User retrieved successfully
+        type: string
+      phone_number:
+        description: Phone number associated with the user's account
+        example: "+2371234567890"
+        type: string
+    type: object
   handlers.LoginRequest:
     properties:
       email:
@@ -211,4 +234,37 @@ paths:
       summary: Create a new exchange
       tags:
       - exchanges
+  /v1/users/:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the details of the authenticated user.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User retrieved successfully
+          schema:
+            $ref: '#/definitions/handlers.GetUserResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get user details
+      tags:
+      - users
 swagger: "2.0"

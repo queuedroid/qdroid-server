@@ -90,22 +90,18 @@ func main() {
 			return debugMode
 		},
 	}))
-	corsOrigins := commons.GetEnv("CORS_ORIGINS")
-	var allowedOrigins []string
-	if corsOrigins != "" {
-		importedOrigins := strings.Split(corsOrigins, ",")
-		for _, o := range importedOrigins {
-			trimmed := strings.TrimSpace(o)
-			if trimmed != "" {
-				allowedOrigins = append(allowedOrigins, trimmed)
-			}
-		}
-	} else {
-		allowedOrigins = []string{"*"}
-	}
+	corsOrigins := commons.GetEnv("CORS_ORIGINS", "*")
+	corsAllowedMethods := commons.GetEnv("CORS_ALLOWED_METHODS", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+	corsAllowedHeaders := commons.GetEnv("CORS_ALLOWED_HEADERS", "Content-Type,Authorization")
+
+	allowedOrigins := strings.Split(corsOrigins, ",")
+	allowedMethods := strings.Split(corsAllowedMethods, ",")
+	allowedHeaders := strings.Split(corsAllowedHeaders, ",")
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: allowedOrigins,
+		AllowMethods: allowedMethods,
+		AllowHeaders: allowedHeaders,
 	}))
 
 	e.Use(middleware.Recover())

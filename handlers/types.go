@@ -62,3 +62,17 @@ type CreateExchangeResponse struct {
 	// Message indicating successful creation
 	Message string `json:"message" example:"Exchange created successfully"`
 }
+
+// swagger:model GetUserResponse
+type GetUserResponse struct {
+	// Unique identifier for the user
+	AccountID string `json:"account_id" example:"acc_1234567890"`
+	// Authentication token for the user's account
+	AccountToken string `json:"account_token" example:"sample_account_token"`
+	// Email address associated with the user's account
+	Email string `json:"email" example:"user@example.com"`
+	// Phone number associated with the user's account
+	PhoneNumber *string `json:"phone_number" example:"+2371234567890"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"User retrieved successfully"`
+}
