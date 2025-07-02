@@ -10,6 +10,7 @@ import (
 	"qdroid-server/db"
 	"qdroid-server/models"
 	"qdroid-server/rabbitmq"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -435,5 +436,127 @@ func GetAllExchangesHandler(c echo.Context) error {
 			TotalPages: totalPages,
 		},
 		Message: "Exchanges retrieved successfully",
+	})
+}
+
+// CreateAndBindQueueHandler godoc
+// @Summary      Create a queue and bind it to an exchange
+// @Description  Creates a new queue binds it to the specified exchange.
+// @Tags         exchanges
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        exchange_id   path    string  true  "Exchange ID"
+// @Param        createBindQueueRequest  body  CreateBindQueueRequest  true  "Create and bind queue request payload. You can get MCC and MNC from https://www.mcc-mnc.com/"
+// @Success      201 {object} CreateBindQueueResponse "Queue created and bound successfully"
+// @Failure      400 {object} echo.HTTPError
+// @Failure      401 {object} echo.HTTPError
+// @Failure      404 {object} echo.HTTPError
+// @Failure      500 {object} echo.HTTPError
+// @Router       /v1/exchanges/{exchange_id}/queues [post]
+func CreateAndBindQueueHandler(c echo.Context) error {
+	logger := c.Logger()
+	exchangeID := c.Param("exchange_id")
+
+	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
+	if err != nil {
+		logger.Error("Failed to initialize RabbitMQ client:", err)
+		return echo.ErrInternalServerError
+	}
+
+	session, ok := c.Get("session").(models.Session)
+	if !ok {
+		logger.Error("Session not found in context.")
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired session token, please login again",
+		}
+	}
+
+	var req CreateBindQueueRequest
+	if err := c.Bind(&req); err != nil {
+		logger.Error("Invalid create/bind queue request payload:", err)
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request payload, please ensure it is well-formed and has content-type application/json header",
+		}
+	}
+
+	if req.CountryCode == "" {
+		logger.Error("CountryCode is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "country_code field is required",
+		}
+	}
+	if req.MCC == "" {
+		logger.Error("MCC is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "mcc field is required",
+		}
+	}
+	if req.MNC == "" {
+		logger.Error("MNC is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "mnc field is required",
+		}
+	}
+
+	user := models.User{}
+	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("User not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+			}
+		}
+		logger.Errorf("Failed to find user: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	exchange := models.Exchange{}
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Exchange not found for binding.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Exchange not found",
+			}
+		}
+		logger.Errorf("Failed to find exchange: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	// You can get MCC and MNC from https://www.mcc-mnc.com/
+	plmnID := fmt.Sprintf("%s%s", req.MCC, req.MNC)
+	// Generate routing key: {exchange_id}.{country_code}.{plmn_id}
+	routingKey := fmt.Sprintf("%s.%s.%s", exchangeID, req.CountryCode, plmnID)
+	queueName := strings.ReplaceAll(routingKey, ".", "_")
+	durable := true
+	autoDelete := false
+	arguments := make(map[string]interface{})
+	bindArguments := make(map[string]interface{})
+
+	if err := rmqClient.CreateQueue(user.AccountID, queueName, durable, autoDelete, arguments); err != nil {
+		logger.Errorf("Failed to create queue in RabbitMQ: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := rmqClient.BindQueue(user.AccountID, queueName, exchangeID, routingKey, bindArguments); err != nil {
+		logger.Errorf("Failed to bind queue to exchange in RabbitMQ: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	logger.Infof("Queue created and bound successfully.")
+	return c.JSON(http.StatusCreated, CreateBindQueueResponse{
+		Message:    "Queue created and bound to exchange successfully",
+		Queue:      queueName,
+		Exchange:   exchangeID,
+		Vhost:      user.AccountID,
+		RoutingKey: routingKey,
 	})
 }

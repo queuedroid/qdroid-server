@@ -3,6 +3,44 @@ definitions:
     properties:
       message: {}
     type: object
+  handlers.CreateBindQueueRequest:
+    properties:
+      country_code:
+        description: Country code (e.g. 237)
+        example: "237"
+        type: string
+      mcc:
+        description: Mobile Country Code (MCC) (e.g. 624)
+        example: "624"
+        type: string
+      mnc:
+        description: Mobile Network Code (MNC) (e.g. 01)
+        example: "01"
+        type: string
+    type: object
+  handlers.CreateBindQueueResponse:
+    properties:
+      exchange:
+        description: Exchange ID the queue was bound to
+        example: exch_jkdfkjdfkdfjkd
+        type: string
+      message:
+        description: Message indicating successful creation and binding
+        example: Queue created and bound to exchange successfully
+        type: string
+      queue:
+        description: Name of the created queue
+        example: exch_jkdfkjdfkdfjkd_237_11223
+        type: string
+      routing_key:
+        description: Routing key used for binding
+        example: exch_jkdfkjdfkdfjkd.237.62401
+        type: string
+      vhost:
+        description: Vhost used for the operation
+        example: acc_1234567890
+        type: string
+    type: object
   handlers.CreateExchangeRequest:
     properties:
       description:
@@ -471,6 +509,59 @@ paths:
       security:
       - BearerAuth: []
       summary: Update an exchange
+      tags:
+      - exchanges
+  /v1/exchanges/{exchange_id}/queues:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new queue binds it to the specified exchange.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      - description: Create and bind queue request payload. You can get MCC and MNC
+          from https://www.mcc-mnc.com/
+        in: body
+        name: createBindQueueRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateBindQueueRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Queue created and bound successfully
+          schema:
+            $ref: '#/definitions/handlers.CreateBindQueueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Create a queue and bind it to an exchange
       tags:
       - exchanges
   /v1/users/:

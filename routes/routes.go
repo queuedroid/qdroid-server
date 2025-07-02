@@ -20,6 +20,7 @@ func RegisterRoutes(e *echo.Echo) {
 	api_v1.GET("/exchanges/:exchange_id", handlers.GetExchangeHandler, middlewares.VerifySessionMiddleware)
 	api_v1.PUT("/exchanges/:exchange_id", handlers.UpdateExchangeHandler, middlewares.VerifySessionMiddleware)
 	api_v1.DELETE("/exchanges/:exchange_id", handlers.DeleteExchangeHandler, middlewares.VerifySessionMiddleware)
+	api_v1.POST("/exchanges/:exchange_id/queues", handlers.CreateAndBindQueueHandler, middlewares.VerifySessionMiddleware)
 	api_v1.GET("/users/", handlers.GetUserHandler, middlewares.VerifySessionMiddleware)
 	commons.Logger.Info("v1 routes registered successfully")
 }

@@ -126,3 +126,27 @@ type ExchangeListResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"Exchanges retrieved successfully"`
 }
+
+// swagger:model CreateBindQueueRequest
+type CreateBindQueueRequest struct {
+	// Country code (e.g. 237)
+	CountryCode string `json:"country_code" example:"237"`
+	// Mobile Country Code (MCC) (e.g. 624)
+	MCC string `json:"mcc" example:"624"`
+	// Mobile Network Code (MNC) (e.g. 01)
+	MNC string `json:"mnc" example:"01"`
+}
+
+// swagger:model CreateBindQueueResponse
+type CreateBindQueueResponse struct {
+	// Message indicating successful creation and binding
+	Message string `json:"message" example:"Queue created and bound to exchange successfully"`
+	// Name of the created queue
+	Queue string `json:"queue" example:"exch_jkdfkjdfkdfjkd_237_11223"`
+	// Exchange ID the queue was bound to
+	Exchange string `json:"exchange" example:"exch_jkdfkjdfkdfjkd"`
+	// Vhost used for the operation
+	Vhost string `json:"vhost" example:"acc_1234567890"`
+	// Routing key used for binding
+	RoutingKey string `json:"routing_key" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+}

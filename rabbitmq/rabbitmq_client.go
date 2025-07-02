@@ -259,3 +259,70 @@ func (c *Client) GetExchangeByName(vhost, exchange string) (map[string]any, erro
 	commons.Logger.Infof("Fetched exchange: %s in vhost: %s", exchange, vhost)
 	return exchangeData, nil
 }
+
+func (c *Client) CreateQueue(vhost, queue string, durable bool, autoDelete bool, arguments map[string]any) error {
+	commons.Logger.Debugf("Creating RabbitMQ queue: %s in vhost: %s", queue, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/queues/%s/%s", url.PathEscape(vhost), url.PathEscape(queue))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	body := map[string]any{
+		"durable":     durable,
+		"auto_delete": autoDelete,
+		"arguments":   arguments,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", u.String(), bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to create queue %s in vhost %s: %s", queue, vhost, resp.Status)
+		return fmt.Errorf("failed to create queue: %s", resp.Status)
+	}
+	return nil
+}
+
+func (c *Client) BindQueue(vhost, queue, exchange, routingKey string, arguments map[string]any) error {
+	commons.Logger.Debugf("Binding queue %s to exchange %s in vhost %s with routing key %s", queue, exchange, vhost, routingKey)
+	rel := &url.URL{Path: fmt.Sprintf("/api/bindings/%s/e/%s/q/%s", url.PathEscape(vhost), url.PathEscape(exchange), url.PathEscape(queue))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	body := map[string]any{
+		"routing_key": routingKey,
+		"arguments":   arguments,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to bind queue %s to exchange %s in vhost %s: %s", queue, exchange, vhost, resp.Status)
+		return fmt.Errorf("failed to bind queue: %s", resp.Status)
+	}
+	return nil
+}

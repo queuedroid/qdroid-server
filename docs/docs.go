@@ -450,6 +450,84 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/exchanges/{exchange_id}/queues": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new queue binds it to the specified exchange.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchanges"
+                ],
+                "summary": "Create a queue and bind it to an exchange",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exchange ID",
+                        "name": "exchange_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Create and bind queue request payload. You can get MCC and MNC from https://www.mcc-mnc.com/",
+                        "name": "createBindQueueRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateBindQueueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Queue created and bound successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateBindQueueResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/users/": {
             "get": {
                 "security": [
@@ -506,6 +584,56 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {}
+            }
+        },
+        "handlers.CreateBindQueueRequest": {
+            "type": "object",
+            "properties": {
+                "country_code": {
+                    "description": "Country code (e.g. 237)",
+                    "type": "string",
+                    "example": "237"
+                },
+                "mcc": {
+                    "description": "Mobile Country Code (MCC) (e.g. 624)",
+                    "type": "string",
+                    "example": "624"
+                },
+                "mnc": {
+                    "description": "Mobile Network Code (MNC) (e.g. 01)",
+                    "type": "string",
+                    "example": "01"
+                }
+            }
+        },
+        "handlers.CreateBindQueueResponse": {
+            "type": "object",
+            "properties": {
+                "exchange": {
+                    "description": "Exchange ID the queue was bound to",
+                    "type": "string",
+                    "example": "exch_jkdfkjdfkdfjkd"
+                },
+                "message": {
+                    "description": "Message indicating successful creation and binding",
+                    "type": "string",
+                    "example": "Queue created and bound to exchange successfully"
+                },
+                "queue": {
+                    "description": "Name of the created queue",
+                    "type": "string",
+                    "example": "exch_jkdfkjdfkdfjkd_237_11223"
+                },
+                "routing_key": {
+                    "description": "Routing key used for binding",
+                    "type": "string",
+                    "example": "exch_jkdfkjdfkdfjkd.237.62401"
+                },
+                "vhost": {
+                    "description": "Vhost used for the operation",
+                    "type": "string",
+                    "example": "acc_1234567890"
+                }
             }
         },
         "handlers.CreateExchangeRequest": {
