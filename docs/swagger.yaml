@@ -182,6 +182,12 @@ definitions:
         description: Total number of pages
         type: integer
     type: object
+  handlers.ReturnMessage:
+    properties:
+      message:
+        description: Message indicating the result of the operation
+        type: string
+    type: object
   handlers.SignupRequest:
     properties:
       email:
@@ -254,6 +260,35 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Login a user
+      tags:
+      - auth
+  /v1/auth/logout:
+    post:
+      description: Logs out a user and invalidates the session.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Logout successful
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Logout a user
       tags:
       - auth
   /v1/auth/signup:
@@ -397,9 +432,7 @@ paths:
         "200":
           description: Exchange deleted successfully
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/handlers.ReturnMessage'
         "401":
           description: Unauthorized, invalid or expired session token
           schema:

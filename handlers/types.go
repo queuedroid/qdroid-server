@@ -85,12 +85,6 @@ type UpdateExchangeRequest struct {
 	Description *string `json:"description" example:"This exchange handles new OTP messages."`
 }
 
-// swagger:model DeleteExchangeResponse
-type DeleteExchangeResponse struct {
-	// Message indicating successful deletion
-	Message string `json:"message" example:"Exchange deleted successfully"`
-}
-
 // swagger:model PaginationDetails
 type PaginationDetails struct {
 	// Current page number
@@ -149,4 +143,10 @@ type CreateBindQueueResponse struct {
 	Vhost string `json:"vhost" example:"acc_1234567890"`
 	// Routing key used for binding
 	RoutingKey string `json:"routing_key" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+}
+
+// swagger:model ReturnMessage
+type ReturnMessage struct {
+	// Message indicating the result of the operation
+	Message string `json:"message"`
 }

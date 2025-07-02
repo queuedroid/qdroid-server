@@ -67,6 +67,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logs out a user and invalidates the session.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Logout successful"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/signup": {
             "post": {
                 "description": "Creates a new user account.",
@@ -423,10 +467,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Exchange deleted successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handlers.ReturnMessage"
                         }
                     },
                     "401": {
@@ -819,6 +860,15 @@ const docTemplate = `{
                 "total_pages": {
                     "description": "Total number of pages",
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.ReturnMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Message indicating the result of the operation",
+                    "type": "string"
                 }
             }
         },
