@@ -30,7 +30,7 @@ func main() {
 
 	docs.SwaggerInfo.Title = "QueueDroid API"
 	docs.SwaggerInfo.Description = "QueueDroid API documentation."
-	if commons.GetEnv("ENVIRONMENT", "") != "production" {
+	if commons.GetEnv("ENV", "") != "production" {
 		e.GET("/docs/*", echoSwagger.WrapHandler)
 	}
 
