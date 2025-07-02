@@ -30,7 +30,9 @@ func main() {
 
 	docs.SwaggerInfo.Title = "QueueDroid API"
 	docs.SwaggerInfo.Description = "QueueDroid API documentation."
-	e.GET("/docs/*", echoSwagger.WrapHandler)
+	if commons.GetEnv("ENVIRONMENT", "") != "production" {
+		e.GET("/docs/*", echoSwagger.WrapHandler)
+	}
 
 	e.Logger.SetLevel(commons.Logger.Level())
 	e.Logger.SetHeader("${time_rfc3339} ${level} ${short_file}:${line} -")
