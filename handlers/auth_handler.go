@@ -104,6 +104,7 @@ func SignupHandler(c echo.Context) error {
 		Email:        req.Email,
 		Password:     hash,
 		PhoneNumber:  req.PhoneNumber,
+		FullName:     req.FullName,
 	}
 
 	tx := db.Conn.Begin()

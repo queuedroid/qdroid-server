@@ -46,5 +46,6 @@ func GetUserHandler(c echo.Context) error {
 		AccountToken: user.AccountToken,
 		Email:        user.Email,
 		PhoneNumber:  user.PhoneNumber,
+		FullName:     user.FullName,
 	})
 }
