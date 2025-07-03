@@ -24,6 +24,7 @@ func main() {
 
 	commons.LoadEnvFile()
 	commons.InitLogger()
+	commons.InitMCCMNC()
 
 	e := echo.New()
 	e.HideBanner = true

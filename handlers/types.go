@@ -154,3 +154,15 @@ type ReturnMessage struct {
 	// Message indicating the result of the operation
 	Message string `json:"message"`
 }
+
+// swagger:model SendMessageRequest
+type SendMessageRequest struct {
+	// The exchange ID to send the message to
+	ExchangeID string `json:"exchange_id" example:"ex_jkdfkjdfkdfjkd"`
+	// The message content to be sent
+	Content string `json:"content" example:"Hello, World!"`
+	// The phone number to send the message to
+	PhoneNumber string `json:"phone_number" example:"+2371234567890"`
+	// The routing key to use for sending the message
+	RoutingKey *string `json:"routing_key" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+}
