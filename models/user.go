@@ -16,6 +16,7 @@ type User struct {
 	AccountToken string  `gorm:"size:255;not null;index"`
 	Email        string  `gorm:"size:255;not null;uniqueIndex"`
 	Password     string  `gorm:"size:255;not null"`
+	CountryCode  string  `gorm:"size:10;not null"`
 	PhoneNumber  *string `gorm:"size:255;default:null"`
 	FullName     *string `gorm:"size:255;default:null"`
 	CreatedAt    time.Time

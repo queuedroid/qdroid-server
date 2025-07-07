@@ -10,6 +10,8 @@ type SignupRequest struct {
 	// User's email address
 	// required: true
 	Email string `json:"email" example:"user@example.com"`
+	// User's ISO 3166-1 alpha-2 country code
+	CountryCode string `json:"country_code" example:"CM"`
 	// Optional phone number
 	PhoneNumber *string `json:"phone_number" example:"+2371234567890"`
 	// Optional full name
@@ -153,6 +155,8 @@ type CreateBindQueueResponse struct {
 type ReturnMessage struct {
 	// Message indicating the result of the operation
 	Message string `json:"message"`
+	// Optional status for the operation
+	Status *string `json:"status,omitempty"`
 }
 
 // swagger:model SendMessageRequest
@@ -163,6 +167,6 @@ type SendMessageRequest struct {
 	Content string `json:"content" example:"Hello, World!"`
 	// The phone number to send the message to
 	PhoneNumber string `json:"phone_number" example:"+2371234567890"`
-	// The routing key to use for sending the message
-	RoutingKey *string `json:"routing_key" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+	// The queue ID to use for sending the message
+	QueueID *string `json:"queue_id" example:"exch_jkdfkjdfkdfjkd.237.62401"`
 }

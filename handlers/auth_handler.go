@@ -16,6 +16,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/nyaruka/phonenumbers"
 	"gorm.io/gorm"
 )
 
@@ -54,6 +55,14 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
+	if req.CountryCode == "" {
+		logger.Error("Country code is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "country_code field is required",
+		}
+	}
+
 	if req.Password == "" {
 		logger.Error("Password is required.")
 		return &echo.HTTPError{
@@ -67,6 +76,35 @@ func SignupHandler(c echo.Context) error {
 		return &echo.HTTPError{
 			Code:    http.StatusBadRequest,
 			Message: fmt.Sprintf("Invalid password: %v", err.Error()),
+		}
+	}
+
+	if req.PhoneNumber != nil && *req.PhoneNumber != "" {
+		parsedNumber, err := phonenumbers.Parse(*req.PhoneNumber, req.CountryCode)
+		if err != nil {
+			logger.Error("Failed to parse phone number: ", err)
+			return &echo.HTTPError{
+				Code:    http.StatusBadRequest,
+				Message: "phone_number field must be a valid E.164 phone number. Please ensure it starts with a '+' followed by the country code and national number.",
+			}
+		}
+
+		if !phonenumbers.IsValidNumber(parsedNumber) {
+			logger.Error("Invalid phone number.")
+			return &echo.HTTPError{
+				Code:    http.StatusBadRequest,
+				Message: "phone_number field must be a valid E.164 phone number. Please ensure it starts with a '+' followed by the country code and national number.",
+			}
+		}
+	}
+
+	countryCodeNum := phonenumbers.GetCountryCodeForRegion(req.CountryCode)
+	fmt.Println("Country code number:", countryCodeNum)
+	if countryCodeNum == 0 {
+		logger.Error("Invalid country code.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "country_code field must be a valid ISO 3166-1 alpha-2 country code.",
 		}
 	}
 
@@ -105,6 +143,7 @@ func SignupHandler(c echo.Context) error {
 		Password:     hash,
 		PhoneNumber:  req.PhoneNumber,
 		FullName:     req.FullName,
+		CountryCode:  req.CountryCode,
 	}
 
 	tx := db.Conn.Begin()
