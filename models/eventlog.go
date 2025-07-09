@@ -27,8 +27,8 @@ const (
 type EventLog struct {
 	ID          uint           `gorm:"primaryKey"`
 	EID         uuid.UUID      `gorm:"type:uuid;not null;"`
-	Category    *EventCategory `gorm:"type:enum('MESSAGE','PAYMENT','AUTH');default:null"`
-	Status      *EventStatus   `gorm:"type:enum('PENDING','QUEUED','FAILED');default:null"`
+	Category    *EventCategory `gorm:"type:varchar(50);default:null"`
+	Status      *EventStatus   `gorm:"type:varchar(50);default:null"`
 	ExchangeID  *string        `gorm:"size:255;default:null;"`
 	QueueName   *string        `gorm:"size:255;default:null;"`
 	QueueID     *string        `gorm:"size:255;default:null;"`
