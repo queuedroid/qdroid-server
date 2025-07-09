@@ -3,6 +3,25 @@ definitions:
     properties:
       message: {}
     type: object
+  handlers.BulkSendMessageRequest:
+    properties:
+      messages:
+        description: List of messages to send
+        items:
+          $ref: '#/definitions/handlers.SendMessageRequest'
+        type: array
+    type: object
+  handlers.BulkSendMessageResponse:
+    properties:
+      count:
+        description: Number of messages accepted for processing
+        example: 5
+        type: integer
+      message:
+        description: Message indicating that bulk processing has started
+        example: Bulk message processing started. Check your logs for more details.
+        type: string
+    type: object
   handlers.CreateBindQueueRequest:
     properties:
       country_code:
@@ -118,6 +137,12 @@ definitions:
         - $ref: '#/definitions/handlers.PaginationDetails'
         description: Pagination details
     type: object
+  handlers.GenericResponse:
+    properties:
+      message:
+        description: Message indicating the result of the operation
+        type: string
+    type: object
   handlers.GetUserResponse:
     properties:
       account_id:
@@ -131,6 +156,10 @@ definitions:
       email:
         description: Email address associated with the user's account
         example: user@example.com
+        type: string
+      full_name:
+        description: Full name of the user
+        example: John Doe
         type: string
       message:
         description: Message indicating successful retrieval
@@ -182,19 +211,40 @@ definitions:
         description: Total number of pages
         type: integer
     type: object
-  handlers.ReturnMessage:
+  handlers.SendMessageRequest:
     properties:
-      message:
-        description: Message indicating the result of the operation
+      content:
+        description: The message content to be sent
+        example: Hello, World!
+        type: string
+      exchange_id:
+        description: The exchange ID to send the message to
+        example: ex_jkdfkjdfkdfjkd
+        type: string
+      phone_number:
+        description: The phone number to send the message to
+        example: "+2371234567890"
+        type: string
+      queue_id:
+        description: The queue ID to use for sending the message
+        example: exch_jkdfkjdfkdfjkd.237.62401
         type: string
     type: object
   handlers.SignupRequest:
     properties:
+      country_code:
+        description: User's ISO 3166-1 alpha-2 country code
+        example: CM
+        type: string
       email:
         description: |-
           User's email address
           required: true
         example: user@example.com
+        type: string
+      full_name:
+        description: Optional full name
+        example: John Doe
         type: string
       password:
         description: |-
@@ -432,7 +482,7 @@ paths:
         "200":
           description: Exchange deleted successfully
           schema:
-            $ref: '#/definitions/handlers.ReturnMessage'
+            $ref: '#/definitions/handlers.GenericResponse'
         "401":
           description: Unauthorized, invalid or expired session token
           schema:
@@ -597,6 +647,96 @@ paths:
       summary: Create a queue and bind it to an exchange
       tags:
       - exchanges
+  /v1/messages/bulk-send:
+    post:
+      consumes:
+      - application/json
+      description: Sends multiple messages in bulk. Processing is done asynchronously.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Bulk send message request payload
+        in: body
+        name: bulkSendMessageRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.BulkSendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Bulk message processing started
+          schema:
+            $ref: '#/definitions/handlers.BulkSendMessageResponse'
+        "400":
+          description: Bad request, missing required fields or empty messages array
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Send multiple messages
+      tags:
+      - messages
+  /v1/messages/send:
+    post:
+      consumes:
+      - application/json
+      description: Sends a single message to the specified exchange and phone number.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Send message request payload
+        in: body
+        name: sendMessageRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message processed successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request, missing required fields or invalid phone number
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange or queue not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Send a single message
+      tags:
+      - messages
   /v1/users/:
     get:
       consumes:

@@ -151,12 +151,10 @@ type CreateBindQueueResponse struct {
 	RoutingKey string `json:"routing_key" example:"exch_jkdfkjdfkdfjkd.237.62401"`
 }
 
-// swagger:model ReturnMessage
-type ReturnMessage struct {
+// swagger:model GenericResponse
+type GenericResponse struct {
 	// Message indicating the result of the operation
 	Message string `json:"message"`
-	// Optional status for the operation
-	Status *string `json:"status,omitempty"`
 }
 
 // swagger:model SendMessageRequest
@@ -169,4 +167,18 @@ type SendMessageRequest struct {
 	PhoneNumber string `json:"phone_number" example:"+2371234567890"`
 	// The queue ID to use for sending the message
 	QueueID *string `json:"queue_id" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+}
+
+// swagger:model BulkSendMessageRequest
+type BulkSendMessageRequest struct {
+	// List of messages to send
+	Messages []SendMessageRequest `json:"messages"`
+}
+
+// swagger:model BulkSendMessageResponse
+type BulkSendMessageResponse struct {
+	// Message indicating that bulk processing has started
+	Message string `json:"message" example:"Bulk message processing started. Check your logs for more details."`
+	// Number of messages accepted for processing
+	Count int `json:"count" example:"5"`
 }

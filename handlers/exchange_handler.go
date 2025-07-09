@@ -236,7 +236,7 @@ func UpdateExchangeHandler(c echo.Context) error {
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
 // @Param        exchange_id   path    string  true  "Exchange ID"
-// @Success      200 {object} ReturnMessage      "Exchange deleted successfully"
+// @Success      200 {object} GenericResponse    "Exchange deleted successfully"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
 // @Failure      404 {object} echo.HTTPError     "Exchange not found"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
@@ -312,7 +312,7 @@ func DeleteExchangeHandler(c echo.Context) error {
 	}
 
 	logger.Infof("Exchange deleted successfully.")
-	return c.JSON(http.StatusOK, ReturnMessage{
+	return c.JSON(http.StatusOK, GenericResponse{
 		Message: "Successfully deleted exchange",
 	})
 }

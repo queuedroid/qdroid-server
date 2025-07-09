@@ -10,7 +10,7 @@ import (
 
 type Exchange struct {
 	ID          uint    `gorm:"primaryKey"`
-	ExchangeID  string  `gorm:"size:255;not null;unique"`
+	ExchangeID  string  `gorm:"size:255;not null;uniqueIndex"`
 	Label       string  `gorm:"size:255;not null;uniqueIndex:idx_user_label"`
 	Description *string `gorm:"type:text;default:null"`
 	CreatedAt   time.Time

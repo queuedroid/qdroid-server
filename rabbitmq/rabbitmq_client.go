@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"qdroid-server/commons"
@@ -325,4 +326,46 @@ func (c *Client) BindQueue(vhost, queue, exchange, routingKey string, arguments 
 		return fmt.Errorf("failed to bind queue: %s", resp.Status)
 	}
 	return nil
+}
+
+func (c *Client) HasQueueBinding(vhost, queue, exchange string) bool {
+	commons.Logger.Debugf("Checking if queue %s has binding to exchange %s in vhost %s", queue, exchange, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/bindings/%s/e/%s/q/%s", url.PathEscape(vhost), url.PathEscape(exchange), url.PathEscape(queue))}
+	u := c.BaseURL.ResolveReference(rel)
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return false
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		commons.Logger.Debugf("Found binding between queue %s and exchange %s in vhost %s", queue, exchange, vhost)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			commons.Logger.Errorf("Failed to read response body: %v", err)
+			return false
+		}
+
+		var bindings []map[string]any
+		if err := json.Unmarshal(body, &bindings); err != nil {
+			commons.Logger.Errorf("Failed to parse bindings response: %v", err)
+			return false
+		}
+
+		return len(bindings) > 0
+	case http.StatusNotFound:
+		commons.Logger.Debugf("No binding found between queue %s and exchange %s in vhost %s", queue, exchange, vhost)
+		return false
+	}
+
+	commons.Logger.Errorf("Failed to check binding for queue %s and exchange %s in vhost %s: %s", queue, exchange, vhost, resp.Status)
+	return false
 }

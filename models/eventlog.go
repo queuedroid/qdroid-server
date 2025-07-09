@@ -34,6 +34,7 @@ type EventLog struct {
 	QueueID     *string        `gorm:"size:255;default:null;"`
 	Description *string        `gorm:"type:text;default:null;"`
 	To          *string        `gorm:"size:255;default:null;"`
+	Carrier     *string        `gorm:"size:255;default:null;"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`

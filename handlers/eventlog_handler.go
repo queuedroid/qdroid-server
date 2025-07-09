@@ -24,6 +24,7 @@ func LogEventHandler(
 	description *string,
 	queueName *string,
 	queueID *string,
+	carrier *string,
 ) error {
 	eventLog := models.EventLog{
 		Category:    category,
@@ -34,6 +35,7 @@ func LogEventHandler(
 		To:          to,
 		UserID:      userID,
 		Description: description,
+		Carrier:     carrier,
 	}
 	return CreateEventLogHandler(eventLog)
 }
@@ -45,12 +47,13 @@ func LogMessageEventFailureHandler(
 	description *string,
 	queueName *string,
 	queueID *string,
+	carrier *string,
 ) error {
 	status := new(models.EventStatus)
 	*status = models.Failed
 	category := new(models.EventCategory)
 	*category = models.Message
-	return LogEventHandler(category, status, exchangeID, to, userID, description, queueName, queueID)
+	return LogEventHandler(category, status, exchangeID, to, userID, description, queueName, queueID, carrier)
 }
 
 func LogMessageEventSuccessHandler(
@@ -59,10 +62,11 @@ func LogMessageEventSuccessHandler(
 	userID uint,
 	queueName *string,
 	queueID *string,
+	carrier *string,
 ) error {
 	status := new(models.EventStatus)
 	*status = models.Queued
 	category := new(models.EventCategory)
 	*category = models.Message
-	return LogEventHandler(category, status, exchangeID, to, userID, nil, queueName, queueID)
+	return LogEventHandler(category, status, exchangeID, to, userID, nil, queueName, queueID, carrier)
 }

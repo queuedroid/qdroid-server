@@ -467,7 +467,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Exchange deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ReturnMessage"
+                            "$ref": "#/definitions/handlers.GenericResponse"
                         }
                     },
                     "401": {
@@ -569,6 +569,142 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/messages/bulk-send": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sends multiple messages in bulk. Processing is done asynchronously.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Send multiple messages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Bulk send message request payload",
+                        "name": "bulkSendMessageRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.BulkSendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Bulk message processing started",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.BulkSendMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields or empty messages array",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/messages/send": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sends a single message to the specified exchange and phone number.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "messages"
+                ],
+                "summary": "Send a single message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Send message request payload",
+                        "name": "sendMessageRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message processed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields or invalid phone number",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Exchange or queue not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/users/": {
             "get": {
                 "security": [
@@ -625,6 +761,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {}
+            }
+        },
+        "handlers.BulkSendMessageRequest": {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "description": "List of messages to send",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.SendMessageRequest"
+                    }
+                }
+            }
+        },
+        "handlers.BulkSendMessageResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "Number of messages accepted for processing",
+                    "type": "integer",
+                    "example": 5
+                },
+                "message": {
+                    "description": "Message indicating that bulk processing has started",
+                    "type": "string",
+                    "example": "Bulk message processing started. Check your logs for more details."
+                }
             }
         },
         "handlers.CreateBindQueueRequest": {
@@ -782,6 +945,15 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.GenericResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Message indicating the result of the operation",
+                    "type": "string"
+                }
+            }
+        },
         "handlers.GetUserResponse": {
             "type": "object",
             "properties": {
@@ -799,6 +971,11 @@ const docTemplate = `{
                     "description": "Email address associated with the user's account",
                     "type": "string",
                     "example": "user@example.com"
+                },
+                "full_name": {
+                    "description": "Full name of the user",
+                    "type": "string",
+                    "example": "John Doe"
                 },
                 "message": {
                     "description": "Message indicating successful retrieval",
@@ -863,22 +1040,48 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.ReturnMessage": {
+        "handlers.SendMessageRequest": {
             "type": "object",
             "properties": {
-                "message": {
-                    "description": "Message indicating the result of the operation",
-                    "type": "string"
+                "content": {
+                    "description": "The message content to be sent",
+                    "type": "string",
+                    "example": "Hello, World!"
+                },
+                "exchange_id": {
+                    "description": "The exchange ID to send the message to",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd"
+                },
+                "phone_number": {
+                    "description": "The phone number to send the message to",
+                    "type": "string",
+                    "example": "+2371234567890"
+                },
+                "queue_id": {
+                    "description": "The queue ID to use for sending the message",
+                    "type": "string",
+                    "example": "exch_jkdfkjdfkdfjkd.237.62401"
                 }
             }
         },
         "handlers.SignupRequest": {
             "type": "object",
             "properties": {
+                "country_code": {
+                    "description": "User's ISO 3166-1 alpha-2 country code",
+                    "type": "string",
+                    "example": "CM"
+                },
                 "email": {
                     "description": "User's email address\nrequired: true",
                     "type": "string",
                     "example": "user@example.com"
+                },
+                "full_name": {
+                    "description": "Optional full name",
+                    "type": "string",
+                    "example": "John Doe"
                 },
                 "password": {
                     "description": "User's password\nrequired: true",
