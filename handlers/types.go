@@ -176,3 +176,32 @@ type BulkSendMessageResponse struct {
 	// Number of messages accepted for processing
 	Count int `json:"count" example:"5"`
 }
+
+// swagger:model QueueDetails
+type QueueDetails struct {
+	// Name of the queue
+	Name string `json:"name"`
+	// Number of messages in the queue
+	// This is the number of messages that are currently in the queue waiting to be consumed.
+	// It can be used to monitor the load on the queue.
+	Messages int `json:"messages"`
+	// Number of devices connected to the queue
+	// This is the number of consumers that are currently consuming messages from this queue.
+	// It can be used to monitor the load on the queue.
+	Consumers int `json:"consumers"`
+	// Current state of the queue
+	// This indicates whether the queue is running, idle, or in an error state.
+	// It can be used to monitor the health of the queue.
+	// Example values: "running", "idle", "error"
+	State string `json:"state"`
+}
+
+// swagger:model QueueListResponse
+type QueueListResponse struct {
+	// List of queues
+	Data []QueueDetails `json:"data"`
+	// Pagination details
+	Pagination PaginationDetails `json:"pagination"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"Queues retrieved successfully"`
+}

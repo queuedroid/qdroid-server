@@ -560,3 +560,110 @@ func CreateAndBindQueueHandler(c echo.Context) error {
 		RoutingKey: routingKey,
 	})
 }
+
+// GetExchangeQueuesHandler godoc
+// @Summary      Get queues for an exchange (paginated)
+// @Description  Retrieves all queues bound to a specific exchange, paginated.
+// @Tags         exchanges
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        exchange_id   path    string  true  "Exchange ID"
+// @Param        page     query   int  false  "Page number (default 1)"
+// @Param        page_size query  int  false  "Page size (default 10, max 100)"
+// @Success      200 {object} QueueListResponse "Paginated list of queues"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      404 {object} echo.HTTPError     "Exchange not found"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/{exchange_id}/queues [get]
+func GetExchangeQueuesHandler(c echo.Context) error {
+	logger := c.Logger()
+	exchangeID := c.Param("exchange_id")
+
+	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
+	if err != nil {
+		logger.Error("Failed to initialize RabbitMQ client:", err)
+		return echo.ErrInternalServerError
+	}
+
+	session, ok := c.Get("session").(models.Session)
+	if !ok {
+		logger.Error("Session not found in context.")
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired session token, please login again",
+		}
+	}
+
+	exchange := models.Exchange{}
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Exchange not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Exchange not found",
+			}
+		}
+		logger.Errorf("Failed to find exchange: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	user := models.User{}
+	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("User not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+			}
+		}
+		logger.Errorf("Failed to find user: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if _, err := fmt.Sscanf(p, "%d", &page); err != nil || page < 1 {
+			page = 1
+		}
+	}
+	if ps := c.QueryParam("page_size"); ps != "" {
+		if _, err := fmt.Sscanf(ps, "%d", &pageSize); err != nil || pageSize < 1 {
+			pageSize = 10
+		}
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	queues, paginationMeta, err := rmqClient.GetQueuesForExchange(user.AccountID, exchangeID, page, pageSize)
+	if err != nil {
+		logger.Errorf("Failed to fetch queues from RabbitMQ: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	var data []QueueDetails
+	for _, queue := range queues {
+		queueDetail := QueueDetails{
+			Name:      queue["name"].(string),
+			State:     queue["state"].(string),
+			Messages:  int(queue["messages"].(float64)),
+			Consumers: int(queue["consumers"].(float64)),
+		}
+		data = append(data, queueDetail)
+	}
+
+	pagination := PaginationDetails{
+		Page:       int(paginationMeta["page"].(int)),
+		PageSize:   int(paginationMeta["page_size"].(int)),
+		Total:      paginationMeta["total"].(int64),
+		TotalPages: int(paginationMeta["total_pages"].(int)),
+	}
+
+	return c.JSON(http.StatusOK, QueueListResponse{
+		Data:       data,
+		Pagination: pagination,
+		Message:    "Queues retrieved successfully",
+	})
+}

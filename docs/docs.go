@@ -492,6 +492,76 @@ const docTemplate = `{
             }
         },
         "/v1/exchanges/{exchange_id}/queues": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all queues bound to a specific exchange, paginated.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchanges"
+                ],
+                "summary": "Get queues for an exchange (paginated)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exchange ID",
+                        "name": "exchange_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of queues",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.QueueListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Exchange not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1037,6 +1107,52 @@ const docTemplate = `{
                 "total_pages": {
                     "description": "Total number of pages",
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.QueueDetails": {
+            "type": "object",
+            "properties": {
+                "consumers": {
+                    "description": "Number of devices connected to the queue\nThis is the number of consumers that are currently consuming messages from this queue.\nIt can be used to monitor the load on the queue.",
+                    "type": "integer"
+                },
+                "messages": {
+                    "description": "Number of messages in the queue\nThis is the number of messages that are currently in the queue waiting to be consumed.\nIt can be used to monitor the load on the queue.",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Name of the queue",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "Current state of the queue\nThis indicates whether the queue is running, idle, or in an error state.\nIt can be used to monitor the health of the queue.\nExample values: \"running\", \"idle\", \"error\"",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.QueueListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of queues",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.QueueDetails"
+                    }
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "Queues retrieved successfully"
+                },
+                "pagination": {
+                    "description": "Pagination details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PaginationDetails"
+                        }
+                    ]
                 }
             }
         },

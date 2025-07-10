@@ -407,6 +407,61 @@ func (c *Client) HasQueueBinding(vhost, queue, exchange string) bool {
 	return false
 }
 
+func (c *Client) GetQueuesForExchange(vhost, exchange string, page, pageSize int) ([]map[string]any, map[string]any, error) {
+	commons.Logger.Debugf("Fetching queues for exchange %s in vhost %s with pagination (page: %d, pageSize: %d)", exchange, vhost, page, pageSize)
+
+	rel := &url.URL{Path: fmt.Sprintf("/api/queues/%s", url.PathEscape(vhost))}
+	u := c.HTTPURL.ResolveReference(rel)
+
+	query := u.Query()
+	query.Set("page", fmt.Sprintf("%d", page))
+	query.Set("page_size", fmt.Sprintf("%d", pageSize))
+	query.Set("name", fmt.Sprintf("^%s_[0-9]+_[0-9]+$", exchange))
+	query.Set("use_regex", "true")
+	query.Set("pagination", "true")
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		commons.Logger.Errorf("Failed to fetch queues for vhost %s: %s", vhost, resp.Status)
+		return nil, nil, fmt.Errorf("failed to fetch queues: %s", resp.Status)
+	}
+
+	var response struct {
+		Items      []map[string]any `json:"items"`
+		Page       int              `json:"page"`
+		PageSize   int              `json:"page_size"`
+		PageCount  int              `json:"page_count"`
+		ItemsCount int              `json:"item_count"`
+		TotalCount int64            `json:"total_count"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, nil, err
+	}
+
+	paginationMeta := map[string]any{
+		"page":        response.Page,
+		"page_size":   response.PageSize,
+		"total":       response.TotalCount,
+		"total_pages": response.PageCount,
+	}
+
+	commons.Logger.Infof("Found %d queues bound to exchange %s in vhost %s (page %d/%d)", response.ItemsCount, exchange, vhost, response.Page, response.PageCount)
+	return response.Items, paginationMeta, nil
+}
+
 func (c *Client) Publish(vhost, exchange, routingKey string, body []byte, contentType string) error {
 	conn, ch, err := c.createAMQPConnection(vhost)
 	if err != nil {
