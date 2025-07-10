@@ -7,6 +7,7 @@ toolchain go1.23.10
 require (
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
+	github.com/rabbitmq/amqp091-go v1.10.0
 	golang.org/x/crypto v0.39.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.0

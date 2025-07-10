@@ -261,6 +261,20 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 		}
 	}
 
+	if err := rmqClient.Publish(
+		user.AccountID,
+		exchange.ExchangeID,
+		queueID,
+		[]byte(req.Content),
+		"",
+	); err != nil {
+		logger.Errorf("Failed to publish message to RabbitMQ: %v", err)
+		return &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to publish message to RabbitMQ",
+		}
+	}
+
 	_ = LogMessageEventSuccessHandler(
 		&req.ExchangeID,
 		&req.PhoneNumber,

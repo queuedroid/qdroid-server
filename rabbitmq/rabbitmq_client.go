@@ -4,6 +4,7 @@ package rabbitmq
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,11 +12,16 @@ import (
 	"net/url"
 	"qdroid-server/commons"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func NewClient(c RabbitMQConfig) (*Client, error) {
-	if c.baseURL == "" {
-		c.baseURL = commons.GetEnv("RABBITMQ_API_URL", "http://localhost:15672")
+	if c.httpURL == "" {
+		c.httpURL = commons.GetEnv("RABBITMQ_HTTP_URL", "http://localhost:15672")
+	}
+	if c.amqpURL == "" {
+		c.amqpURL = commons.GetEnv("RABBITMQ_AMQP_URL", "amqp://guest:guest@localhost:5672")
 	}
 	if c.username == "" {
 		c.username = commons.GetEnv("RABBITMQ_USERNAME", "guest")
@@ -24,24 +30,55 @@ func NewClient(c RabbitMQConfig) (*Client, error) {
 		c.password = commons.GetEnv("RABBITMQ_PASSWORD", "guest")
 	}
 
-	parsedURL, err := url.Parse(c.baseURL)
+	parsedHTTPURL, err := url.Parse(c.httpURL)
 	if err != nil {
-		commons.Logger.Error("Failed to parse RabbitMQ API base URL:", err)
+		commons.Logger.Error("Failed to parse RabbitMQ HTTP URL:", err)
 		return nil, err
 	}
-	commons.Logger.Debugf("RabbitMQ API client initialized for %s", c.baseURL)
-	return &Client{
-		BaseURL:    parsedURL,
+	commons.Logger.Debugf("RabbitMQ HTTP URL parsed successfully: %s", c.httpURL)
+
+	parsedAMQPURL, err := url.Parse(c.amqpURL)
+	if err != nil {
+		commons.Logger.Error("Failed to parse RabbitMQ AMQP URL:", err)
+		return nil, err
+	}
+	commons.Logger.Debugf("RabbitMQ AMQP URL parsed successfully: %s", c.amqpURL)
+
+	client := &Client{
+		HTTPURL:    parsedHTTPURL,
+		AMQPURL:    parsedAMQPURL,
 		Username:   c.username,
 		Password:   c.password,
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
-	}, nil
+	}
+
+	return client, nil
+}
+
+func (c *Client) createAMQPConnection(vhost string) (*amqp.Connection, *amqp.Channel, error) {
+	amqpURL := *c.AMQPURL
+	amqpURL.Path = url.PathEscape(vhost)
+	commons.Logger.Debugf("Connecting to RabbitMQ AMQP URL: %s", amqpURL.String())
+
+	conn, err := amqp.Dial(amqpURL.String())
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to connect to AMQP: %w", err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		conn.Close()
+		return nil, nil, fmt.Errorf("failed to open AMQP channel: %w", err)
+	}
+
+	commons.Logger.Debug("AMQP connection established")
+	return conn, ch, nil
 }
 
 func (c *Client) CreateVhost(vhost string) error {
 	commons.Logger.Debugf("Creating RabbitMQ vhost: %s", vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/vhosts/%s", url.PathEscape(vhost))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return err
@@ -62,7 +99,7 @@ func (c *Client) CreateVhost(vhost string) error {
 func (c *Client) DeleteVhost(vhost string) error {
 	commons.Logger.Debugf("Deleting RabbitMQ vhost: %s", vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/vhosts/%s", url.PathEscape(vhost))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
 		commons.Logger.Error("Failed to create HTTP request for vhost deletion:", err)
@@ -85,7 +122,7 @@ func (c *Client) DeleteVhost(vhost string) error {
 func (c *Client) CreateUser(username, password string, tags []string) error {
 	commons.Logger.Debugf("Creating RabbitMQ user: %s", username)
 	rel := &url.URL{Path: fmt.Sprintf("/api/users/%s", url.PathEscape(username))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	body := map[string]any{
 		"password": password,
@@ -118,7 +155,7 @@ func (c *Client) CreateUser(username, password string, tags []string) error {
 func (c *Client) SetPermissions(vhost, username, configure, write, read string) error {
 	commons.Logger.Debugf("Setting permissions for user %s on vhost %s", username, vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/permissions/%s/%s", url.PathEscape(vhost), url.PathEscape(username))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	body := map[string]string{
 		"configure": configure,
@@ -152,7 +189,7 @@ func (c *Client) SetPermissions(vhost, username, configure, write, read string) 
 func (c *Client) DeleteUser(username string) error {
 	commons.Logger.Debugf("Deleting RabbitMQ user: %s", username)
 	rel := &url.URL{Path: fmt.Sprintf("/api/users/%s", url.PathEscape(username))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
@@ -176,7 +213,7 @@ func (c *Client) DeleteUser(username string) error {
 func (c *Client) CreateExchange(vhost, exchange, exchangeType string, durable bool) error {
 	commons.Logger.Debugf("Creating RabbitMQ exchange: %s in vhost: %s", exchange, vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/exchanges/%s/%s", url.PathEscape(vhost), url.PathEscape(exchange))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	body := map[string]any{
 		"type":    exchangeType,
@@ -209,7 +246,7 @@ func (c *Client) CreateExchange(vhost, exchange, exchangeType string, durable bo
 func (c *Client) DeleteExchange(vhost, exchange string) error {
 	commons.Logger.Debugf("Deleting RabbitMQ exchange: %s in vhost: %s", exchange, vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/exchanges/%s/%s", url.PathEscape(vhost), url.PathEscape(exchange))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
@@ -233,7 +270,7 @@ func (c *Client) DeleteExchange(vhost, exchange string) error {
 func (c *Client) GetExchangeByName(vhost, exchange string) (map[string]any, error) {
 	commons.Logger.Debugf("Fetching RabbitMQ exchange: %s in vhost: %s", exchange, vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/exchanges/%s/%s", url.PathEscape(vhost), url.PathEscape(exchange))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
@@ -264,7 +301,7 @@ func (c *Client) GetExchangeByName(vhost, exchange string) (map[string]any, erro
 func (c *Client) CreateQueue(vhost, queue string, durable bool, autoDelete bool, arguments map[string]any) error {
 	commons.Logger.Debugf("Creating RabbitMQ queue: %s in vhost: %s", queue, vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/queues/%s/%s", url.PathEscape(vhost), url.PathEscape(queue))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	body := map[string]any{
 		"durable":     durable,
@@ -298,7 +335,7 @@ func (c *Client) CreateQueue(vhost, queue string, durable bool, autoDelete bool,
 func (c *Client) BindQueue(vhost, queue, exchange, routingKey string, arguments map[string]any) error {
 	commons.Logger.Debugf("Binding queue %s to exchange %s in vhost %s with routing key %s", queue, exchange, vhost, routingKey)
 	rel := &url.URL{Path: fmt.Sprintf("/api/bindings/%s/e/%s/q/%s", url.PathEscape(vhost), url.PathEscape(exchange), url.PathEscape(queue))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	body := map[string]any{
 		"routing_key": routingKey,
@@ -331,7 +368,7 @@ func (c *Client) BindQueue(vhost, queue, exchange, routingKey string, arguments 
 func (c *Client) HasQueueBinding(vhost, queue, exchange string) bool {
 	commons.Logger.Debugf("Checking if queue %s has binding to exchange %s in vhost %s", queue, exchange, vhost)
 	rel := &url.URL{Path: fmt.Sprintf("/api/bindings/%s/e/%s/q/%s", url.PathEscape(vhost), url.PathEscape(exchange), url.PathEscape(queue))}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.HTTPURL.ResolveReference(rel)
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
@@ -368,4 +405,52 @@ func (c *Client) HasQueueBinding(vhost, queue, exchange string) bool {
 
 	commons.Logger.Errorf("Failed to check binding for queue %s and exchange %s in vhost %s: %s", queue, exchange, vhost, resp.Status)
 	return false
+}
+
+func (c *Client) Publish(vhost, exchange, routingKey string, body []byte, contentType string) error {
+	conn, ch, err := c.createAMQPConnection(vhost)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if ch != nil {
+			commons.Logger.Debugf("Closing AMQP channel for vhost %s", vhost)
+			ch.Close()
+		}
+		if conn != nil {
+			commons.Logger.Debugf("Closing AMQP connection for vhost %s", vhost)
+			conn.Close()
+		}
+	}()
+
+	if contentType == "" {
+		contentType = "application/json"
+	}
+
+	commons.Logger.Debugf("Publishing message to exchange %s with routing key %s in vhost %s", exchange, routingKey, vhost)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err = ch.PublishWithContext(
+		ctx,
+		exchange,
+		routingKey,
+		true,
+		false,
+		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			ContentType:  contentType,
+			Body:         body,
+			Timestamp:    time.Now(),
+		},
+	)
+
+	if err != nil {
+		commons.Logger.Errorf("Failed to publish message: %v", err)
+		return fmt.Errorf("failed to publish message: %w", err)
+	}
+
+	commons.Logger.Infof("Message published to exchange %s with routing key %s", exchange, routingKey)
+	return nil
 }

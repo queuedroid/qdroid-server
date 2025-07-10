@@ -16,7 +16,8 @@ services:
       - DB_PASSWORD
       - LOG_LEVEL
       - JWT_SECRET
-      - RABBITMQ_API_URL=http://rabbitmq:15672
+      - RABBITMQ_HTTP_URL=http://rabbitmq:15672
+      - RABBITMQ_AMQP_URL=amqp://$RABBITMQ_USERNAME:$RABBITMQ_PASSWORD@rabbitmq:5672
       - RABBITMQ_USERNAME
       - RABBITMQ_PASSWORD
       - ARGON2_TIME

@@ -5,17 +5,25 @@ package rabbitmq
 import (
 	"net/http"
 	"net/url"
+	"sync"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type RabbitMQConfig struct {
-	baseURL  string
+	httpURL  string
+	amqpURL  string
 	username string
 	password string
 }
 
 type Client struct {
-	BaseURL    *url.URL
-	Username   string
-	Password   string
-	HTTPClient *http.Client
+	HTTPURL     *url.URL
+	AMQPURL     *url.URL
+	Username    string
+	Password    string
+	HTTPClient  *http.Client
+	AMQPConn    *amqp.Connection
+	AMQPChannel *amqp.Channel
+	mutex       sync.RWMutex
 }
