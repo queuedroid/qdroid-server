@@ -106,7 +106,6 @@ func GetEventLogsSummaryHandler(c echo.Context) error {
 		}
 	}
 
-	// Group query operations for better performance
 	var results []struct {
 		Status string
 		Count  int64
@@ -126,10 +125,8 @@ func GetEventLogsSummaryHandler(c echo.Context) error {
 		}
 	}
 
-	// Initialize counters
 	var totalCount, totalQueued, totalFailed, totalPending int64
 
-	// Process results
 	for _, result := range results {
 		totalCount += result.Count
 		switch result.Status {
