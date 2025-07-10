@@ -176,6 +176,29 @@ definitions:
         - $ref: '#/definitions/handlers.PaginationDetails'
         description: Pagination details
     type: object
+  handlers.EventLogSummaryData:
+    properties:
+      total_count:
+        example: 150
+        type: integer
+      total_failed:
+        example: 20
+        type: integer
+      total_pending:
+        example: 0
+        type: integer
+      total_queued:
+        example: 130
+        type: integer
+    type: object
+  handlers.EventLogSummaryResponse:
+    properties:
+      data:
+        $ref: '#/definitions/handlers.EventLogSummaryData'
+      message:
+        example: Event logs summary retrieved successfully
+        type: string
+    type: object
   handlers.ExchangeDetails:
     properties:
       created_at:
@@ -518,6 +541,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Get event logs (paginated)
+      tags:
+      - event-logs
+  /v1/event-logs/summary:
+    get:
+      description: Retrieves summary statistics for all event logs for the authenticated
+        user by category and status combination. Can be filtered by category.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Filter by event category (MESSAGE, PAYMENT, AUTH)
+        in: query
+        name: category
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Event logs summary with totals by category and status
+          schema:
+            $ref: '#/definitions/handlers.EventLogSummaryResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get event logs summary
       tags:
       - event-logs
   /v1/exchanges/:

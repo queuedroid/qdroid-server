@@ -241,3 +241,17 @@ type EventLogListResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"Event logs retrieved successfully"`
 }
+
+// swagger:model EventLogSummaryResponse
+type EventLogSummaryResponse struct {
+	Data    EventLogSummaryData `json:"data"`
+	Message string              `json:"message" example:"Event logs summary retrieved successfully"`
+}
+
+// swagger:model EventLogSummaryData
+type EventLogSummaryData struct {
+	TotalCount   int64 `json:"total_count" example:"150"`
+	TotalQueued  int64 `json:"total_queued" example:"130"`
+	TotalFailed  int64 `json:"total_failed" example:"20"`
+	TotalPending int64 `json:"total_pending" example:"0"`
+}

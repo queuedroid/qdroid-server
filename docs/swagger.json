@@ -223,6 +223,60 @@
                 }
             }
         },
+        "/v1/event-logs/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves summary statistics for all event logs for the authenticated user by category and status combination. Can be filtered by category.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "event-logs"
+                ],
+                "summary": "Get event logs summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by event category (MESSAGE, PAYMENT, AUTH)",
+                        "name": "category",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event logs summary with totals by category and status",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventLogSummaryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/exchanges/": {
             "get": {
                 "security": [
@@ -1117,6 +1171,39 @@
                             "$ref": "#/definitions/handlers.PaginationDetails"
                         }
                     ]
+                }
+            }
+        },
+        "handlers.EventLogSummaryData": {
+            "type": "object",
+            "properties": {
+                "total_count": {
+                    "type": "integer",
+                    "example": 150
+                },
+                "total_failed": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "total_pending": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "total_queued": {
+                    "type": "integer",
+                    "example": 130
+                }
+            }
+        },
+        "handlers.EventLogSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/handlers.EventLogSummaryData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Event logs summary retrieved successfully"
                 }
             }
         },

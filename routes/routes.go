@@ -27,5 +27,6 @@ func RegisterRoutes(e *echo.Echo) {
 	api_v1.POST("/messages/send", handlers.SendMessageHandler, middlewares.VerifySessionMiddleware)
 	api_v1.POST("/messages/bulk-send", handlers.SendBulkMessagesHandler, middlewares.VerifySessionMiddleware)
 	api_v1.GET("/event-logs", handlers.GetEventLogsHandler, middlewares.VerifySessionMiddleware)
+	api_v1.GET("/event-logs/summary", handlers.GetEventLogsSummaryHandler, middlewares.VerifySessionMiddleware)
 	commons.Logger.Info("v1 routes registered successfully")
 }

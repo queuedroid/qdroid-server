@@ -74,6 +74,87 @@ func LogMessageEventSuccessHandler(
 	return LogEventHandler(category, status, exchangeID, to, userID, nil, queueName, queueID, carrier)
 }
 
+// GetEventLogsSummaryHandler godoc
+// @Summary      Get event logs summary
+// @Description  Retrieves summary statistics for all event logs for the authenticated user by category and status combination. Can be filtered by category.
+// @Tags         event-logs
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        category query   string  true  "Filter by event category (MESSAGE, PAYMENT, AUTH)"
+// @Success      200 {object} EventLogSummaryResponse "Event logs summary with totals by category and status"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/event-logs/summary [get]
+func GetEventLogsSummaryHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	session, ok := c.Get("session").(models.Session)
+	if !ok {
+		logger.Error("Session not found in context.")
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired session token, please login again",
+		}
+	}
+
+	category := c.QueryParam("category")
+	if category == "" {
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Category parameter is required",
+		}
+	}
+
+	// Group query operations for better performance
+	var results []struct {
+		Status string
+		Count  int64
+	}
+
+	err := db.Conn.Model(&models.EventLog{}).
+		Select("status, count(*) as count").
+		Where("user_id = ? AND category = ?", session.UserID, category).
+		Group("status").
+		Find(&results).Error
+
+	if err != nil {
+		logger.Error("Failed to fetch event log summary:", err)
+		return &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to retrieve event logs summary",
+		}
+	}
+
+	// Initialize counters
+	var totalCount, totalQueued, totalFailed, totalPending int64
+
+	// Process results
+	for _, result := range results {
+		totalCount += result.Count
+		switch result.Status {
+		case string(models.Queued):
+			totalQueued = result.Count
+		case string(models.Failed):
+			totalFailed = result.Count
+		case string(models.Pending):
+			totalPending = result.Count
+		}
+	}
+
+	summaryData := EventLogSummaryData{
+		TotalCount:   totalCount,
+		TotalQueued:  totalQueued,
+		TotalFailed:  totalFailed,
+		TotalPending: totalPending,
+	}
+
+	return c.JSON(http.StatusOK, EventLogSummaryResponse{
+		Data:    summaryData,
+		Message: "Event logs summary retrieved successfully",
+	})
+}
+
 // GetEventLogsHandler godoc
 // @Summary      Get event logs (paginated)
 // @Description  Retrieves all event logs for the authenticated user, paginated. Supports filtering by category and status.
