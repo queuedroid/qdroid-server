@@ -18,10 +18,15 @@ type SignupRequest struct {
 	FullName *string `json:"full_name" example:"John Doe"`
 }
 
-// swagger:model SignupResponse
-type SignupResponse struct {
-	// Message indicating successful signup
-	Message string `json:"message" example:"Signup successful"`
+// swagger:model AuthResponse
+type AuthResponse struct {
+	// Authentication session token
+	// This token is used for subsequent authenticated requests.
+	// It should be stored securely by the client.
+	// Should be used in the Authorization header as a Bearer token.
+	SessionToken string `json:"session_token" example:"sample_session_token"`
+	// Message indicating successful operation
+	Message string `json:"message" example:"Operation successful"`
 }
 
 // swagger:model LoginRequest
@@ -30,17 +35,6 @@ type LoginRequest struct {
 	Email string `json:"email" example:"user@example.com"`
 	// User's password
 	Password string `json:"password" example:"MySecretPassword@123"`
-}
-
-// swagger:model LoginResponse
-type LoginResponse struct {
-	// Authentication session token
-	// This token is used for subsequent authenticated requests.
-	// It should be stored securely by the client.
-	// Should be used in the Authorization header as a Bearer token.
-	SessionToken string `json:"session_token" example:"sample_session_token"`
-	// Message indicating successful login
-	Message string `json:"message" example:"Login successful"`
 }
 
 // swagger:model CreateExchangeRequest

@@ -20,6 +20,54 @@ import (
 	"gorm.io/gorm"
 )
 
+func generateSessionToken(c echo.Context, user models.User) (string, error) {
+	logger := c.Logger()
+
+	sessionToken, err := crypto.GenerateRandomString("st_long_", 32, "hex")
+	if err != nil {
+		logger.Errorf("Failed to generate session token: %v", err)
+		return "", err
+	}
+
+	sessionExp := time.Now().Add(30 * 24 * time.Hour)
+	sessionLastused := time.Now()
+	session := models.Session{}
+
+	userAgent := c.Request().Header.Get("User-Agent")
+	ipAddress := c.RealIP()
+
+	if err := db.Conn.Where("user_id = ?", user.ID).Assign(models.Session{
+		UserID:     user.ID,
+		Token:      sessionToken,
+		LastUsedAt: &sessionLastused,
+		ExpiresAt:  &sessionExp,
+		UserAgent:  &userAgent,
+		IPAddress:  &ipAddress,
+	}).FirstOrCreate(&session).Error; err != nil {
+		logger.Errorf("Failed to create session: %v", err)
+		return "", err
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iss": "https://queuedroid.com",
+		"iat": time.Now().Unix(),
+		"sub": user.AccountID,
+		"aud": "https://api.queuedroid.com",
+		"jti": sessionToken,
+		"sid": session.ID,
+		"uid": user.ID,
+		"exp": session.ExpiresAt.Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(commons.GetEnv("JWT_SECRET", "default_very_secret_key")))
+	if err != nil {
+		logger.Errorf("Failed to sign token: %v", err)
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
 // SignupHandler godoc
 // @Summary      Register a new user
 // @Description  Creates a new user account.
@@ -27,7 +75,7 @@ import (
 // @Accept       json
 // @Produce      json
 // @Param        signupRequest  body  SignupRequest  true  "Signup request payload"
-// @Success      201 {object} SignupResponse 	 "Signup successful"
+// @Success      201 {object} AuthResponse 	 "Signup successful"
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
 // @Failure      409 {object} echo.HTTPError     "Duplicate user"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
@@ -184,8 +232,17 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	sessionToken, err := generateSessionToken(c, user)
+	if err != nil {
+		logger.Errorf("Failed to generate session token after signup: %v", err)
+		return echo.ErrInternalServerError
+	}
+
 	logger.Infof("User signed up successfully")
-	return c.JSON(http.StatusCreated, SignupResponse{Message: "Signup successful"})
+	return c.JSON(http.StatusCreated, AuthResponse{
+		SessionToken: sessionToken,
+		Message:      "Signup successful",
+	})
 }
 
 // LoginHandler godoc
@@ -195,7 +252,7 @@ func SignupHandler(c echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        loginRequest  body  LoginRequest  true  "Login request payload"
-// @Success      200 {object} LoginResponse 	 "Login successful"
+// @Success      200 {object} AuthResponse 	 "Login successful"
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
@@ -250,48 +307,16 @@ func LoginHandler(c echo.Context) error {
 		}
 	}
 
-	session_token, err := crypto.GenerateRandomString("st_long_", 32, "hex")
+	sessionToken, err := generateSessionToken(c, user)
 	if err != nil {
-		logger.Errorf("Failed to generate session token: %v", err)
+		logger.Errorf("Failed to generate session token after login: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	session_exp := time.Now().Add(30 * 24 * time.Hour)
-	session_lastused := time.Now()
-	session := models.Session{}
-
-	user_agent := c.Request().Header.Get("User-Agent")
-	ip_address := c.RealIP()
-
-	if err := db.Conn.Where("user_id = ?", user.ID).Assign(models.Session{
-		UserID:     user.ID,
-		Token:      session_token,
-		LastUsedAt: &session_lastused,
-		ExpiresAt:  &session_exp,
-		UserAgent:  &user_agent,
-		IPAddress:  &ip_address,
-	}).FirstOrCreate(&session).Error; err != nil {
-		logger.Errorf("Failed to create session: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iss": "https://qdroid-server.com",
-		"iat": time.Now().Unix(),
-		"sub": user.AccountID,
-		"aud": "https://api.qdroid-server.com",
-		"jti": session_token,
-		"sid": session.ID,
-		"uid": user.ID,
-		"exp": session.ExpiresAt.Unix(),
+	return c.JSON(http.StatusOK, AuthResponse{
+		SessionToken: sessionToken,
+		Message:      "Login successful",
 	})
-	tokenString, err := token.SignedString([]byte(commons.GetEnv("JWT_SECRET", "default_very_secret_key")))
-	if err != nil {
-		logger.Errorf("Failed to sign token: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	return c.JSON(http.StatusOK, LoginResponse{SessionToken: tokenString, Message: "Login successful"})
 }
 
 // LogoutHandler godoc

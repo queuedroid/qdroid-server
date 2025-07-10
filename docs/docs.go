@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Login successful",
                         "schema": {
-                            "$ref": "#/definitions/handlers.LoginResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "400": {
@@ -139,7 +139,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Signup successful",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SignupResponse"
+                            "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "400": {
@@ -763,6 +763,21 @@ const docTemplate = `{
                 "message": {}
             }
         },
+        "handlers.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Message indicating successful operation",
+                    "type": "string",
+                    "example": "Operation successful"
+                },
+                "session_token": {
+                    "description": "Authentication session token\nThis token is used for subsequent authenticated requests.\nIt should be stored securely by the client.\nShould be used in the Authorization header as a Bearer token.",
+                    "type": "string",
+                    "example": "sample_session_token"
+                }
+            }
+        },
         "handlers.BulkSendMessageRequest": {
             "type": "object",
             "properties": {
@@ -1004,21 +1019,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "description": "Message indicating successful login",
-                    "type": "string",
-                    "example": "Login successful"
-                },
-                "session_token": {
-                    "description": "Authentication session token\nThis token is used for subsequent authenticated requests.\nIt should be stored securely by the client.\nShould be used in the Authorization header as a Bearer token.",
-                    "type": "string",
-                    "example": "sample_session_token"
-                }
-            }
-        },
         "handlers.PaginationDetails": {
             "type": "object",
             "properties": {
@@ -1092,16 +1092,6 @@ const docTemplate = `{
                     "description": "Optional phone number",
                     "type": "string",
                     "example": "+2371234567890"
-                }
-            }
-        },
-        "handlers.SignupResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "description": "Message indicating successful signup",
-                    "type": "string",
-                    "example": "Signup successful"
                 }
             }
         },

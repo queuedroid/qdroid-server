@@ -3,6 +3,21 @@ definitions:
     properties:
       message: {}
     type: object
+  handlers.AuthResponse:
+    properties:
+      message:
+        description: Message indicating successful operation
+        example: Operation successful
+        type: string
+      session_token:
+        description: |-
+          Authentication session token
+          This token is used for subsequent authenticated requests.
+          It should be stored securely by the client.
+          Should be used in the Authorization header as a Bearer token.
+        example: sample_session_token
+        type: string
+    type: object
   handlers.BulkSendMessageRequest:
     properties:
       messages:
@@ -181,21 +196,6 @@ definitions:
         example: MySecretPassword@123
         type: string
     type: object
-  handlers.LoginResponse:
-    properties:
-      message:
-        description: Message indicating successful login
-        example: Login successful
-        type: string
-      session_token:
-        description: |-
-          Authentication session token
-          This token is used for subsequent authenticated requests.
-          It should be stored securely by the client.
-          Should be used in the Authorization header as a Bearer token.
-        example: sample_session_token
-        type: string
-    type: object
   handlers.PaginationDetails:
     properties:
       page:
@@ -257,13 +257,6 @@ definitions:
         example: "+2371234567890"
         type: string
     type: object
-  handlers.SignupResponse:
-    properties:
-      message:
-        description: Message indicating successful signup
-        example: Signup successful
-        type: string
-    type: object
   handlers.UpdateExchangeRequest:
     properties:
       description:
@@ -296,7 +289,7 @@ paths:
         "200":
           description: Login successful
           schema:
-            $ref: '#/definitions/handlers.LoginResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "400":
           description: Bad request, missing required fields
           schema:
@@ -359,7 +352,7 @@ paths:
         "201":
           description: Signup successful
           schema:
-            $ref: '#/definitions/handlers.SignupResponse'
+            $ref: '#/definitions/handlers.AuthResponse'
         "400":
           description: Bad request, missing required fields
           schema:
