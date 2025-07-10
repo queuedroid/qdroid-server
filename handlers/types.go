@@ -205,3 +205,39 @@ type QueueListResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"Queues retrieved successfully"`
 }
+
+// swagger:model EventLogDetails
+type EventLogDetails struct {
+	// Event ID
+	EID string `json:"eid" example:"550e8400-e29b-41d4-a716-446655440000"`
+	// Event category
+	Category *string `json:"category" example:"MESSAGE"`
+	// Event status
+	Status *string `json:"status" example:"QUEUED"`
+	// Exchange ID associated with the event
+	ExchangeID *string `json:"exchange_id" example:"ex_jkdfkjdfkdfjkd"`
+	// Queue name
+	QueueName *string `json:"queue_name" example:"exch_jkdfkjdfkdfjkd_237_62401"`
+	// Queue ID
+	QueueID *string `json:"queue_id" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+	// Event description
+	Description *string `json:"description" example:"Message sent successfully"`
+	// Recipient phone number or email
+	To *string `json:"to" example:"+2371234567890"`
+	// Carrier used for the message
+	Carrier *string `json:"carrier" example:"MTN"`
+	// Timestamp of when the event was created
+	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
+	// Timestamp of when the event was last updated
+	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
+}
+
+// swagger:model EventLogListResponse
+type EventLogListResponse struct {
+	// List of event logs
+	Data []EventLogDetails `json:"data"`
+	// Pagination details
+	Pagination PaginationDetails `json:"pagination"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"Event logs retrieved successfully"`
+}

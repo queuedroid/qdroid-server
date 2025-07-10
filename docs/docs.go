@@ -163,6 +163,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/event-logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all event logs for the authenticated user, paginated. Supports filtering by category and status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "event-logs"
+                ],
+                "summary": "Get event logs (paginated)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by event category (MESSAGE, PAYMENT, AUTH)",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by event status (PENDING, QUEUED, FAILED)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of event logs",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.EventLogListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/exchanges/": {
             "get": {
                 "security": [
@@ -972,6 +1043,91 @@ const docTemplate = `{
                     "description": "Timestamp of when the exchange was last updated",
                     "type": "string",
                     "example": "2023-10-01T12:00:00Z"
+                }
+            }
+        },
+        "handlers.EventLogDetails": {
+            "type": "object",
+            "properties": {
+                "carrier": {
+                    "description": "Carrier used for the message",
+                    "type": "string",
+                    "example": "MTN"
+                },
+                "category": {
+                    "description": "Event category",
+                    "type": "string",
+                    "example": "MESSAGE"
+                },
+                "created_at": {
+                    "description": "Timestamp of when the event was created",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "description": {
+                    "description": "Event description",
+                    "type": "string",
+                    "example": "Message sent successfully"
+                },
+                "eid": {
+                    "description": "Event ID",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "exchange_id": {
+                    "description": "Exchange ID associated with the event",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd"
+                },
+                "queue_id": {
+                    "description": "Queue ID",
+                    "type": "string",
+                    "example": "exch_jkdfkjdfkdfjkd.237.62401"
+                },
+                "queue_name": {
+                    "description": "Queue name",
+                    "type": "string",
+                    "example": "exch_jkdfkjdfkdfjkd_237_62401"
+                },
+                "status": {
+                    "description": "Event status",
+                    "type": "string",
+                    "example": "QUEUED"
+                },
+                "to": {
+                    "description": "Recipient phone number or email",
+                    "type": "string",
+                    "example": "+2371234567890"
+                },
+                "updated_at": {
+                    "description": "Timestamp of when the event was last updated",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                }
+            }
+        },
+        "handlers.EventLogListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of event logs",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.EventLogDetails"
+                    }
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "Event logs retrieved successfully"
+                },
+                "pagination": {
+                    "description": "Pagination details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PaginationDetails"
+                        }
+                    ]
                 }
             }
         },
