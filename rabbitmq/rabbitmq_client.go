@@ -444,7 +444,7 @@ func (c *Client) GetQueuesForExchange(vhost, exchange string, page, pageSize int
 		PageSize   int              `json:"page_size"`
 		PageCount  int              `json:"page_count"`
 		ItemsCount int              `json:"item_count"`
-		TotalCount int64            `json:"total_count"`
+		TotalCount int64            `json:"filtered_count"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
