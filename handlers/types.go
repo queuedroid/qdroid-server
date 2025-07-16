@@ -271,3 +271,21 @@ type ExchangeConnectionResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"Exchange connection details retrieved successfully"`
 }
+
+// swagger:model QueueConnectionResponse
+type QueueConnectionResponse struct {
+	// Virtual host (user's account ID)
+	VirtualHost string `json:"virtual_host" example:"acc_1234567890"`
+	// Username for AMQP connection (user's account ID)
+	Username string `json:"username" example:"acc_1234567890"`
+	// Password for AMQP connection (user's account token)
+	Password string `json:"password" example:"sample_account_token"`
+	// Exchange ID
+	Exchange string `json:"exchange" example:"ex_jkdfkjdfkdfjkd"`
+	// Full AMQP URL for connection
+	AMQPURL string `json:"amqp_url" example:"amqp://acc_1234567890:sample_account_token@localhost:5672/acc_1234567890"`
+	// Binding key or routing key for queue operations
+	BindingKey string `json:"binding_key" example:"ex_jkdfkjdfkdfjkd.237.62401"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"Queue connection details retrieved successfully"`
+}
