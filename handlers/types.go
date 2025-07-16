@@ -255,3 +255,19 @@ type EventLogSummaryData struct {
 	TotalFailed  int64 `json:"total_failed" example:"20"`
 	TotalPending int64 `json:"total_pending" example:"0"`
 }
+
+// swagger:model ExchangeConnectionResponse
+type ExchangeConnectionResponse struct {
+	// Virtual host (user's account ID)
+	VirtualHost string `json:"virtual_host" example:"acc_1234567890"`
+	// Username for AMQP connection (user's account ID)
+	Username string `json:"username" example:"acc_1234567890"`
+	// Password for AMQP connection (user's account token)
+	Password string `json:"password" example:"sample_account_token"`
+	// Exchange ID
+	Exchange string `json:"exchange" example:"ex_jkdfkjdfkdfjkd"`
+	// Full AMQP URL for connection
+	AMQPURL string `json:"amqp_url" example:"amqp://acc_1234567890:sample_account_token@localhost:5672/acc_1234567890"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"Exchange connection details retrieved successfully"`
+}

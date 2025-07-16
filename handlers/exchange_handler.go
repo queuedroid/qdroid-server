@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"qdroid-server/commons"
 	"qdroid-server/crypto"
 	"qdroid-server/db"
 	"qdroid-server/models"
@@ -665,5 +666,95 @@ func GetExchangeQueuesHandler(c echo.Context) error {
 		Data:       data,
 		Pagination: pagination,
 		Message:    "Queues retrieved successfully",
+	})
+}
+
+// GetExchangeConnectionHandler godoc
+// @Summary      Get exchange connection details
+// @Description  Retrieves the AMQP connection details for an exchange, including virtual host, username, password, and full AMQP URL.
+// @Tags         exchanges
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        exchange_id    path    string  true  "Exchange ID"
+// @Success      200 {object}  ExchangeConnectionResponse "Exchange connection details retrieved successfully"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      404 {object} echo.HTTPError     "Exchange not found"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/{exchange_id}/connection [get]
+func GetExchangeConnectionHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	session, ok := c.Get("session").(models.Session)
+	if !ok {
+		logger.Error("Session not found in context.")
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired session token, please login again",
+		}
+	}
+
+	exchangeID := c.Param("exchange_id")
+	if exchangeID == "" {
+		logger.Error("Exchange ID is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Exchange ID is required",
+		}
+	}
+
+	exchange := models.Exchange{}
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Exchange not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Exchange not found",
+			}
+		}
+		logger.Errorf("Failed to find exchange: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	user := models.User{}
+	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("User not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "User not found",
+			}
+		}
+		logger.Errorf("Failed to find user: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
+	if err != nil {
+		logger.Error("Failed to initialize RabbitMQ client:", err)
+		return echo.ErrInternalServerError
+	}
+
+	host := rmqClient.AMQPURL.Host
+	scheme := rmqClient.AMQPURL.Scheme
+	if commons.GetEnv("ENV", "") == "production" {
+		host = "mq.queuedroid.com"
+		scheme = "amqps"
+	}
+	amqpURL := fmt.Sprintf("%s://%s:%s@%s/%s",
+		scheme,
+		user.AccountID,
+		user.AccountToken,
+		host,
+		user.AccountID)
+
+	return c.JSON(http.StatusOK, ExchangeConnectionResponse{
+		VirtualHost: user.AccountID,
+		Username:    user.AccountID,
+		Password:    user.AccountToken,
+		Exchange:    exchange.ExchangeID,
+		AMQPURL:     amqpURL,
+		Message:     "Exchange connection details retrieved successfully",
 	})
 }
