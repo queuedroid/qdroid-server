@@ -616,6 +616,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/exchanges/{exchange_id}/connection": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the AMQP connection details for an exchange, including virtual host, username, password, and full AMQP URL.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "exchanges"
+                ],
+                "summary": "Get exchange connection details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exchange ID",
+                        "name": "exchange_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exchange connection details retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ExchangeConnectionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Exchange not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/exchanges/{exchange_id}/queues": {
             "get": {
                 "security": [
@@ -757,6 +820,76 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/exchanges/{exchange_id}/queues/{queue_id}/connection": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the AMQP connection details for connecting to queues, including virtual host, username, password, exchange, binding key, and full AMQP URL.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "queues"
+                ],
+                "summary": "Get queue connection details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exchange ID",
+                        "name": "exchange_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Queue ID",
+                        "name": "queue_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Queue connection details retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.QueueConnectionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Exchange not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
@@ -1218,6 +1351,41 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ExchangeConnectionResponse": {
+            "type": "object",
+            "properties": {
+                "amqp_url": {
+                    "description": "Full AMQP URL for connection",
+                    "type": "string",
+                    "example": "amqp://acc_1234567890:sample_account_token@localhost:5672/acc_1234567890"
+                },
+                "exchange": {
+                    "description": "Exchange ID",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd"
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "Exchange connection details retrieved successfully"
+                },
+                "password": {
+                    "description": "Password for AMQP connection (user's account token)",
+                    "type": "string",
+                    "example": "sample_account_token"
+                },
+                "username": {
+                    "description": "Username for AMQP connection (user's account ID)",
+                    "type": "string",
+                    "example": "acc_1234567890"
+                },
+                "virtual_host": {
+                    "description": "Virtual host (user's account ID)",
+                    "type": "string",
+                    "example": "acc_1234567890"
+                }
+            }
+        },
         "handlers.ExchangeDetails": {
             "type": "object",
             "properties": {
@@ -1350,6 +1518,46 @@ const docTemplate = `{
                 "total_pages": {
                     "description": "Total number of pages",
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.QueueConnectionResponse": {
+            "type": "object",
+            "properties": {
+                "amqp_url": {
+                    "description": "Full AMQP URL for connection",
+                    "type": "string",
+                    "example": "amqp://acc_1234567890:sample_account_token@localhost:5672/acc_1234567890"
+                },
+                "binding_key": {
+                    "description": "Binding key or routing key for queue operations",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd.237.62401"
+                },
+                "exchange": {
+                    "description": "Exchange ID",
+                    "type": "string",
+                    "example": "ex_jkdfkjdfkdfjkd"
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "Queue connection details retrieved successfully"
+                },
+                "password": {
+                    "description": "Password for AMQP connection (user's account token)",
+                    "type": "string",
+                    "example": "sample_account_token"
+                },
+                "username": {
+                    "description": "Username for AMQP connection (user's account ID)",
+                    "type": "string",
+                    "example": "acc_1234567890"
+                },
+                "virtual_host": {
+                    "description": "Virtual host (user's account ID)",
+                    "type": "string",
+                    "example": "acc_1234567890"
                 }
             }
         },

@@ -199,6 +199,33 @@ definitions:
         example: Event logs summary retrieved successfully
         type: string
     type: object
+  handlers.ExchangeConnectionResponse:
+    properties:
+      amqp_url:
+        description: Full AMQP URL for connection
+        example: amqp://acc_1234567890:sample_account_token@localhost:5672/acc_1234567890
+        type: string
+      exchange:
+        description: Exchange ID
+        example: ex_jkdfkjdfkdfjkd
+        type: string
+      message:
+        description: Message indicating successful retrieval
+        example: Exchange connection details retrieved successfully
+        type: string
+      password:
+        description: Password for AMQP connection (user's account token)
+        example: sample_account_token
+        type: string
+      username:
+        description: Username for AMQP connection (user's account ID)
+        example: acc_1234567890
+        type: string
+      virtual_host:
+        description: Virtual host (user's account ID)
+        example: acc_1234567890
+        type: string
+    type: object
   handlers.ExchangeDetails:
     properties:
       created_at:
@@ -296,6 +323,37 @@ definitions:
       total_pages:
         description: Total number of pages
         type: integer
+    type: object
+  handlers.QueueConnectionResponse:
+    properties:
+      amqp_url:
+        description: Full AMQP URL for connection
+        example: amqp://acc_1234567890:sample_account_token@localhost:5672/acc_1234567890
+        type: string
+      binding_key:
+        description: Binding key or routing key for queue operations
+        example: ex_jkdfkjdfkdfjkd.237.62401
+        type: string
+      exchange:
+        description: Exchange ID
+        example: ex_jkdfkjdfkdfjkd
+        type: string
+      message:
+        description: Message indicating successful retrieval
+        example: Queue connection details retrieved successfully
+        type: string
+      password:
+        description: Password for AMQP connection (user's account token)
+        example: sample_account_token
+        type: string
+      username:
+        description: Username for AMQP connection (user's account ID)
+        example: acc_1234567890
+        type: string
+      virtual_host:
+        description: Virtual host (user's account ID)
+        example: acc_1234567890
+        type: string
     type: object
   handlers.QueueDetails:
     properties:
@@ -799,6 +857,49 @@ paths:
       summary: Update an exchange
       tags:
       - exchanges
+  /v1/exchanges/{exchange_id}/connection:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the AMQP connection details for an exchange, including
+        virtual host, username, password, and full AMQP URL.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exchange connection details retrieved successfully
+          schema:
+            $ref: '#/definitions/handlers.ExchangeConnectionResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get exchange connection details
+      tags:
+      - exchanges
   /v1/exchanges/{exchange_id}/queues:
     get:
       description: Retrieves all queues bound to a specific exchange, paginated.
@@ -899,6 +1000,55 @@ paths:
       summary: Create a queue and bind it to an exchange
       tags:
       - exchanges
+  /v1/exchanges/{exchange_id}/queues/{queue_id}/connection:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the AMQP connection details for connecting to queues,
+        including virtual host, username, password, exchange, binding key, and full
+        AMQP URL.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      - description: Queue ID
+        in: path
+        name: queue_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Queue connection details retrieved successfully
+          schema:
+            $ref: '#/definitions/handlers.QueueConnectionResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get queue connection details
+      tags:
+      - queues
   /v1/messages/bulk-send:
     post:
       consumes:
