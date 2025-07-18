@@ -161,6 +161,8 @@ type SendMessageRequest struct {
 	PhoneNumber string `json:"phone_number" example:"+2371234567890"`
 	// The queue ID to use for sending the message
 	QueueID *string `json:"queue_id" example:"exch_jkdfkjdfkdfjkd.237.62401"`
+	// Indicates if the message is secured
+	Secured *bool `json:"secured" example:"false"`
 }
 
 // swagger:model BulkSendMessageRequest
