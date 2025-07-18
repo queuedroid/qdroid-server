@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -261,12 +262,31 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 		}
 	}
 
+	// Default secured to false if not provided
+	secured := false
+	if req.Secured != nil {
+		secured = *req.Secured
+	}
+
+	// Create the structured queued message
+	queuedMessage := models.NewQueuedMessage(req.Content, req.PhoneNumber, secured)
+
+	// Serialize the queued message to JSON
+	messageBody, err := json.Marshal(queuedMessage)
+	if err != nil {
+		logger.Errorf("Failed to serialize queued message: %v", err)
+		return &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to serialize message",
+		}
+	}
+
 	if err := rmqClient.Publish(
 		user.AccountID,
 		exchange.ExchangeID,
 		queueID,
-		[]byte(req.Content),
-		"",
+		messageBody,
+		"application/json",
 	); err != nil {
 		logger.Errorf("Failed to publish message to RabbitMQ: %v", err)
 		return &echo.HTTPError{
@@ -284,6 +304,6 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 		carrierInfo,
 	)
 
-	logger.Info("Successfully queued message.")
+	logger.Infof("Successfully queued message with ID: %s", queuedMessage.Mid)
 	return nil
 }
