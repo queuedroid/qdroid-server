@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -249,11 +250,26 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 		}
 	}
 
+	messagePayload := map[string]string{
+		"sid":  "",
+		"body": req.Content,
+		"to":   req.PhoneNumber,
+	}
+
+	messageBytes, err := json.Marshal(messagePayload)
+	if err != nil {
+		logger.Errorf("Failed to marshal message payload: %v", err)
+		return &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create message payload",
+		}
+	}
+
 	if err := rmqClient.Publish(
 		user.AccountID,
 		exchange.ExchangeID,
 		queueID,
-		[]byte(req.Content),
+		messageBytes,
 		"",
 	); err != nil {
 		logger.Errorf("Failed to publish message to RabbitMQ: %v", err)
