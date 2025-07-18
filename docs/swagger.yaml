@@ -244,6 +244,10 @@ definitions:
         description: Exchange ID
         example: ex_jkdfkjdfkdfjkd
         type: string
+      host:
+        description: Host for AMQP connection
+        example: localhost
+        type: string
       message:
         description: Message indicating successful retrieval
         example: Exchange connection details retrieved successfully
@@ -251,6 +255,14 @@ definitions:
       password:
         description: Password for AMQP connection (user's account token)
         example: sample_account_token
+        type: string
+      port:
+        description: Port for AMQP connection
+        example: "5672"
+        type: string
+      protocol:
+        description: Protocol for AMQP connection
+        example: AMQP
         type: string
       username:
         description: Username for AMQP connection (user's account ID)
@@ -373,6 +385,10 @@ definitions:
         description: Exchange ID
         example: ex_jkdfkjdfkdfjkd
         type: string
+      host:
+        description: Host for AMQP connection
+        example: localhost
+        type: string
       message:
         description: Message indicating successful retrieval
         example: Queue connection details retrieved successfully
@@ -380,6 +396,14 @@ definitions:
       password:
         description: Password for AMQP connection (user's account token)
         example: sample_account_token
+        type: string
+      port:
+        description: Port for AMQP connection
+        example: "5672"
+        type: string
+      protocol:
+        description: Protocol for AMQP connection
+        example: AMQP
         type: string
       username:
         description: Username for AMQP connection (user's account ID)

@@ -1474,6 +1474,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "ex_jkdfkjdfkdfjkd"
                 },
+                "host": {
+                    "description": "Host for AMQP connection",
+                    "type": "string",
+                    "example": "localhost"
+                },
                 "message": {
                     "description": "Message indicating successful retrieval",
                     "type": "string",
@@ -1483,6 +1488,16 @@ const docTemplate = `{
                     "description": "Password for AMQP connection (user's account token)",
                     "type": "string",
                     "example": "sample_account_token"
+                },
+                "port": {
+                    "description": "Port for AMQP connection",
+                    "type": "string",
+                    "example": "5672"
+                },
+                "protocol": {
+                    "description": "Protocol for AMQP connection",
+                    "type": "string",
+                    "example": "AMQP"
                 },
                 "username": {
                     "description": "Username for AMQP connection (user's account ID)",
@@ -1649,6 +1664,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "ex_jkdfkjdfkdfjkd"
                 },
+                "host": {
+                    "description": "Host for AMQP connection",
+                    "type": "string",
+                    "example": "localhost"
+                },
                 "message": {
                     "description": "Message indicating successful retrieval",
                     "type": "string",
@@ -1658,6 +1678,16 @@ const docTemplate = `{
                     "description": "Password for AMQP connection (user's account token)",
                     "type": "string",
                     "example": "sample_account_token"
+                },
+                "port": {
+                    "description": "Port for AMQP connection",
+                    "type": "string",
+                    "example": "5672"
+                },
+                "protocol": {
+                    "description": "Protocol for AMQP connection",
+                    "type": "string",
+                    "example": "AMQP"
                 },
                 "username": {
                     "description": "Username for AMQP connection (user's account ID)",

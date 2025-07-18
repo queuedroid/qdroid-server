@@ -737,10 +737,12 @@ func GetExchangeConnectionHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	host := rmqClient.AMQPURL.Host
+	host := rmqClient.AMQPURL.Hostname()
+	port := rmqClient.AMQPURL.Port()
 	scheme := rmqClient.AMQPURL.Scheme
 	if commons.GetEnv("ENV", "") == "production" {
 		host = "mq.queuedroid.com"
+		port = "5671"
 		scheme = "amqps"
 	}
 	amqpURL := fmt.Sprintf("%s://%s:%s@%s/%s",
@@ -756,6 +758,9 @@ func GetExchangeConnectionHandler(c echo.Context) error {
 		Password:    user.AccountToken,
 		Exchange:    exchange.ExchangeID,
 		AMQPURL:     amqpURL,
+		Host:        host,
+		Port:        port,
+		Protocol:    strings.ToUpper(scheme),
 		Message:     "Exchange connection details retrieved successfully",
 	})
 }
@@ -845,10 +850,12 @@ func GetQueueConnectionHandler(c echo.Context) error {
 		}
 	}
 
-	host := rmqClient.AMQPURL.Host
+	host := rmqClient.AMQPURL.Hostname()
+	port := rmqClient.AMQPURL.Port()
 	scheme := rmqClient.AMQPURL.Scheme
 	if commons.GetEnv("ENV", "") == "production" {
 		host = "mq.queuedroid.com"
+		port = "5671"
 		scheme = "amqps"
 	}
 	amqpURL := fmt.Sprintf("%s://%s:%s@%s/%s",
@@ -865,6 +872,9 @@ func GetQueueConnectionHandler(c echo.Context) error {
 		Exchange:    exchange.ExchangeID,
 		AMQPURL:     amqpURL,
 		BindingKey:  queueID,
+		Host:        host,
+		Port:        port,
+		Protocol:    strings.ToUpper(scheme),
 		Message:     "Queue connection details retrieved successfully",
 	})
 }
