@@ -289,3 +289,49 @@ type QueueConnectionResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"Queue connection details retrieved successfully"`
 }
+
+// swagger:model CreateAPIKeyRequest
+type CreateAPIKeyRequest struct {
+	// Name of the API key
+	Name string `json:"name" example:"My API Key"`
+	// Description of the API key
+	Description *string `json:"description" example:"This key is used for accessing the QDroid API."`
+	// Expiration date for the API key (optional)
+	ExpiresAt *string `json:"expires_at" example:"2024-12-31T23:59:59Z"`
+}
+
+// swagger:model CreateAPIKeyResponse
+type CreateAPIKeyResponse struct {
+	// API key created
+	APIKey string `json:"api_key" example:"ak_jkdfkjdfkdfjkdlklklklkllklklklklklklklklklkl"`
+	// Key ID of the created API key
+	KeyID string `json:"key_id" example:"ak_jkdfkjdfkdfjkd"`
+	// Hashed key of the created API key
+	HashedKey string `json:"hashed_key" example:"$2a$10$abcdefghijklmnopqrstuvwxyz"`
+	// Name of the API key
+	Name string `json:"name" example:"My API Key"`
+	// Description of the API key
+	Description *string `json:"description" example:"This key is used for accessing the QDroid API."`
+	// Timestamp of when the API key was created
+	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
+	// Expiration date for the API key
+	ExpiresAt *string `json:"expires_at" example:"2024-12-31T23:59:59Z"`
+	// Message indicating successful creation
+	Message string `json:"message" example:"API key created successfully"`
+}
+
+// swagger:model APIKeyDetails
+type APIKeyDetails struct {
+	// Name of the API key
+	Name string `json:"name" example:"My API Key"`
+	// Description of the API key
+	Description *string `json:"description" example:"This key is used for accessing the QDroid API."`
+	// Timestamp of when the API key was created
+	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
+	// Timestamp of when the API key was last updated
+	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
+	// Last used timestamp of the API key
+	LastUsedAt *string `json:"last_used_at" example:"2023-10-01T12:00:00Z"`
+	// Expiration date for the API key
+	ExpiresAt *string `json:"expires_at" example:"2024-12-31T23:59:59Z"`
+}

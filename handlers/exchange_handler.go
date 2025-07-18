@@ -12,6 +12,7 @@ import (
 	"qdroid-server/models"
 	"qdroid-server/rabbitmq"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -132,8 +133,8 @@ func CreateExchangeHandler(c echo.Context) error {
 		ExchangeID:  exchange.ExchangeID,
 		Label:       exchange.Label,
 		Description: exchange.Description,
-		CreatedAt:   exchange.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		UpdatedAt:   exchange.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		CreatedAt:   exchange.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   exchange.UpdatedAt.Format(time.RFC3339),
 	})
 }
 

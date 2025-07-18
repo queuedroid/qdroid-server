@@ -4,8 +4,7 @@ package handlers
 
 import (
 	"net/http"
-	"qdroid-server/db"
-	"qdroid-server/models"
+	"qdroid-server/middlewares"
 
 	"github.com/labstack/echo/v4"
 )
@@ -25,19 +24,13 @@ import (
 func GetUserHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		logger.Errorf("Failed to find user: %v", err)
-		return echo.ErrInternalServerError
 	}
 
 	return c.JSON(http.StatusOK, GetUserResponse{

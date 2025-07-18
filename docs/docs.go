@@ -15,6 +15,71 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/auth/api-keys": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new API key for the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Create API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "API key created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateAPIKeyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicate API key name detected",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns a token.",
@@ -1130,6 +1195,51 @@ const docTemplate = `{
                     "description": "Message indicating that bulk processing has started",
                     "type": "string",
                     "example": "Bulk message processing started. Check your logs for more details."
+                }
+            }
+        },
+        "handlers.CreateAPIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "description": "API key created",
+                    "type": "string",
+                    "example": "ak_jkdfkjdfkdfjkdlklklklkllklklklklklklklklklkl"
+                },
+                "created_at": {
+                    "description": "Timestamp of when the API key was created",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "description": {
+                    "description": "Description of the API key",
+                    "type": "string",
+                    "example": "This key is used for accessing the QDroid API."
+                },
+                "expires_at": {
+                    "description": "Expiration date for the API key",
+                    "type": "string",
+                    "example": "2024-12-31T23:59:59Z"
+                },
+                "hashed_key": {
+                    "description": "Hashed key of the created API key",
+                    "type": "string",
+                    "example": "$2a$10$abcdefghijklmnopqrstuvwxyz"
+                },
+                "key_id": {
+                    "description": "Key ID of the created API key",
+                    "type": "string",
+                    "example": "ak_jkdfkjdfkdfjkd"
+                },
+                "message": {
+                    "description": "Message indicating successful creation",
+                    "type": "string",
+                    "example": "API key created successfully"
+                },
+                "name": {
+                    "description": "Name of the API key",
+                    "type": "string",
+                    "example": "My API Key"
                 }
             }
         },

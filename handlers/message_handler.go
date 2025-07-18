@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"qdroid-server/commons"
 	"qdroid-server/db"
+	"qdroid-server/middlewares"
 	"qdroid-server/models"
 	"qdroid-server/rabbitmq"
 	"strings"
@@ -41,12 +42,12 @@ func SendMessageHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -59,7 +60,7 @@ func SendMessageHandler(c echo.Context) error {
 		}
 	}
 
-	httpErr := processMessage(req, session, logger, rmqClient)
+	httpErr := processMessage(req, user, logger, rmqClient)
 
 	if httpErr != nil {
 		return httpErr
@@ -93,12 +94,12 @@ func SendBulkMessagesHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -119,7 +120,7 @@ func SendBulkMessagesHandler(c echo.Context) error {
 	}
 
 	for _, msg := range req.Messages {
-		go processMessage(msg, session, logger, rmqClient)
+		go processMessage(msg, user, logger, rmqClient)
 	}
 
 	return c.JSON(http.StatusAccepted, BulkSendMessageResponse{
@@ -128,7 +129,7 @@ func SendBulkMessagesHandler(c echo.Context) error {
 	})
 }
 
-func processMessage(req SendMessageRequest, session models.Session, logger echo.Logger, rmqClient *rabbitmq.Client) *echo.HTTPError {
+func processMessage(req SendMessageRequest, user *models.User, logger echo.Logger, rmqClient *rabbitmq.Client) *echo.HTTPError {
 	if req.ExchangeID == "" {
 		logger.Error("Missing ExchangeID in message request.")
 		return &echo.HTTPError{
@@ -168,7 +169,7 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", req.ExchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", req.ExchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -181,20 +182,7 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 		return echo.ErrInternalServerError
 	}
 
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-
-		logger.Errorf("Failed to find user: %v", err)
-		return echo.ErrInternalServerError
-	}
-
+	// User is already available, no need to fetch again
 	var queueID string
 	var carrierInfo *string
 	logFailure := func(msg string) error {
@@ -202,7 +190,7 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 		_ = LogMessageEventFailureHandler(
 			&req.ExchangeID,
 			&req.PhoneNumber,
-			session.UserID,
+			user.ID,
 			&msg,
 			nil,
 			nil,
@@ -278,7 +266,7 @@ func processMessage(req SendMessageRequest, session models.Session, logger echo.
 	_ = LogMessageEventSuccessHandler(
 		&req.ExchangeID,
 		&req.PhoneNumber,
-		session.UserID,
+		user.ID,
 		&queueName,
 		&queueID,
 		carrierInfo,
