@@ -309,7 +309,7 @@ type CreateAPIKeyRequest struct {
 	// Description of the API key
 	Description *string `json:"description" example:"This key is used for accessing the QDroid API."`
 	// Expiration date for the API key (optional)
-	ExpiresAt *string `json:"expires_at" example:"2024-12-31T23:59:59Z"`
+	ExpiresAt *string `json:"expires_at" example:"2024-12-31"`
 }
 
 // swagger:model CreateAPIKeyResponse
@@ -318,8 +318,6 @@ type CreateAPIKeyResponse struct {
 	APIKey string `json:"api_key" example:"ak_jkdfkjdfkdfjkdlklklklkllklklklklklklklklklkl"`
 	// Key ID of the created API key
 	KeyID string `json:"key_id" example:"ak_jkdfkjdfkdfjkd"`
-	// Hashed key of the created API key
-	HashedKey string `json:"hashed_key" example:"$2a$10$abcdefghijklmnopqrstuvwxyz"`
 	// Name of the API key
 	Name string `json:"name" example:"My API Key"`
 	// Description of the API key
@@ -327,13 +325,15 @@ type CreateAPIKeyResponse struct {
 	// Timestamp of when the API key was created
 	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
 	// Expiration date for the API key
-	ExpiresAt *string `json:"expires_at" example:"2024-12-31T23:59:59Z"`
+	ExpiresAt *string `json:"expires_at" example:"2024-12-31"`
 	// Message indicating successful creation
 	Message string `json:"message" example:"API key created successfully"`
 }
 
 // swagger:model APIKeyDetails
 type APIKeyDetails struct {
+	// Key ID of the created API key
+	KeyID string `json:"key_id" example:"ak_jkdfkjdfkdfjkd"`
 	// Name of the API key
 	Name string `json:"name" example:"My API Key"`
 	// Description of the API key
@@ -345,5 +345,5 @@ type APIKeyDetails struct {
 	// Last used timestamp of the API key
 	LastUsedAt *string `json:"last_used_at" example:"2023-10-01T12:00:00Z"`
 	// Expiration date for the API key
-	ExpiresAt *string `json:"expires_at" example:"2024-12-31T23:59:59Z"`
+	ExpiresAt *string `json:"expires_at" example:"2024-12-31"`
 }

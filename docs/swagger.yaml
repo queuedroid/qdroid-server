@@ -53,11 +53,7 @@ definitions:
         type: string
       expires_at:
         description: Expiration date for the API key
-        example: "2024-12-31T23:59:59Z"
-        type: string
-      hashed_key:
-        description: Hashed key of the created API key
-        example: $2a$10$abcdefghijklmnopqrstuvwxyz
+        example: "2024-12-31"
         type: string
       key_id:
         description: Key ID of the created API key

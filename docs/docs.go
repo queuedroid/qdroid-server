@@ -1219,12 +1219,7 @@ const docTemplate = `{
                 "expires_at": {
                     "description": "Expiration date for the API key",
                     "type": "string",
-                    "example": "2024-12-31T23:59:59Z"
-                },
-                "hashed_key": {
-                    "description": "Hashed key of the created API key",
-                    "type": "string",
-                    "example": "$2a$10$abcdefghijklmnopqrstuvwxyz"
+                    "example": "2024-12-31"
                 },
                 "key_id": {
                     "description": "Key ID of the created API key",

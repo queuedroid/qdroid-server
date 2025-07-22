@@ -58,13 +58,13 @@ func CreateAPIKeyHandler(c echo.Context) error {
 	}
 
 	var expiresAt *time.Time
-	if req.ExpiresAt != nil {
-		parsedTime, err := time.Parse(time.RFC3339, *req.ExpiresAt)
+	if req.ExpiresAt != nil && *req.ExpiresAt != "" {
+		parsedTime, err := time.Parse("2006-01-02", *req.ExpiresAt)
 		if err != nil {
-			logger.Error("Invalid ExpiresAt format. Must be RFC3339:", err)
+			logger.Error("Invalid ExpiresAt format. Must be date-only:", err)
 			return &echo.HTTPError{
 				Code:    http.StatusBadRequest,
-				Message: "expiresAt must be a valid RFC3339 datetime string",
+				Message: "expires_at must be a valid date in YYYY-MM-DD format",
 			}
 		}
 		expiresAt = &parsedTime
@@ -131,14 +131,17 @@ func CreateAPIKeyHandler(c echo.Context) error {
 
 	var expiresAtStr *string
 	if apiKey.ExpiresAt != nil {
-		str := apiKey.ExpiresAt.Format(time.RFC3339)
+		str := apiKey.ExpiresAt.Format("2006-01-02")
 		expiresAtStr = &str
 	}
 
 	return c.JSON(http.StatusCreated, CreateAPIKeyResponse{
 		APIKey:      fullApiKey,
+		KeyID:       apiKey.KeyID,
 		Name:        apiKey.Name,
 		Description: apiKey.Description,
 		ExpiresAt:   expiresAtStr,
+		CreatedAt:   apiKey.CreatedAt.Format(time.RFC3339),
+		Message:     "API key created successfully",
 	})
 }
