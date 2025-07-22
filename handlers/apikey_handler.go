@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"qdroid-server/crypto"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 // CreateAPIKeyHandler godoc
@@ -217,5 +219,56 @@ func GetAllAPIKeyHandler(c echo.Context) error {
 			TotalPages: totalPages,
 		},
 		Message: "API keys retrieved successfully",
+	})
+}
+
+// DeleteAPIKeyHandler godoc
+// @Summary      Delete API key
+// @Description  Deletes an existing API key for the authenticated user.
+// @Tags         auth
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        key_id        path    string  true  "API Key ID"
+// @Success      200 {object} GenericResponse "API key deleted successfully"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      404 {object} echo.HTTPError     "API key not found"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/auth/api-keys/{key_id} [delete]
+func DeleteAPIKeyHandler(c echo.Context) error {
+	logger := c.Logger()
+	keyID := c.Param("key_id")
+
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired authentication token, please login again",
+		}
+	}
+
+	apiKey := models.APIKey{}
+	if err := db.Conn.Where("key_id = ? AND user_id = ?", keyID, user.ID).First(&apiKey).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("API key not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "API key not found",
+			}
+		}
+
+		logger.Errorf("Failed to find API key: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := db.Conn.Unscoped().Delete(&apiKey).Error; err != nil {
+		logger.Errorf("Failed to delete API key: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	logger.Infof("API key deleted successfully.")
+	return c.JSON(http.StatusOK, GenericResponse{
+		Message: "API key deleted successfully",
 	})
 }
