@@ -296,7 +296,7 @@ func DeleteExchangeHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	if err := tx.Delete(&exchange).Error; err != nil {
+	if err := tx.Unscoped().Delete(&exchange).Error; err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to delete exchange: %v", err)
 		return echo.ErrInternalServerError
