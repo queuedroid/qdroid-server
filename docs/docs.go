@@ -16,6 +16,63 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/v1/auth/api-keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all API keys for the authenticated user, paginated.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get all API keys (paginated)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of API keys",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.APIKeyListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1156,6 +1213,66 @@ const docTemplate = `{
                 "message": {}
             }
         },
+        "handlers.APIKeyDetails": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamp of when the API key was created",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "description": {
+                    "description": "Description of the API key",
+                    "type": "string",
+                    "example": "This key is used for accessing the QDroid API."
+                },
+                "expires_at": {
+                    "description": "Expiration date for the API key",
+                    "type": "string",
+                    "example": "2024-12-31"
+                },
+                "key_id": {
+                    "description": "Key ID of the created API key",
+                    "type": "string",
+                    "example": "ak_jkdfkjdfkdfjkd"
+                },
+                "last_used_at": {
+                    "description": "Last used timestamp of the API key",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "name": {
+                    "description": "Name of the API key",
+                    "type": "string",
+                    "example": "My API Key"
+                }
+            }
+        },
+        "handlers.APIKeyListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of API keys",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.APIKeyDetails"
+                    }
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "API keys retrieved successfully"
+                },
+                "pagination": {
+                    "description": "Pagination details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PaginationDetails"
+                        }
+                    ]
+                }
+            }
+        },
         "handlers.AuthResponse": {
             "type": "object",
             "properties": {
@@ -1204,7 +1321,7 @@ const docTemplate = `{
                 "api_key": {
                     "description": "API key created",
                     "type": "string",
-                    "example": "ak_jkdfkjdfkdfjkdlklklklkllklklklklklklklklklkl"
+                    "example": "ak_jkdfkjdfkdfjkdlklklkllklklklklklklklklklklkl"
                 },
                 "created_at": {
                     "description": "Timestamp of when the API key was created",

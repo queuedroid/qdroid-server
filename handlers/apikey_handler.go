@@ -3,15 +3,15 @@
 package handlers
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"qdroid-server/crypto"
 	"qdroid-server/db"
+	"qdroid-server/middlewares"
 	"qdroid-server/models"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 )
 
 // CreateAPIKeyHandler godoc
@@ -31,12 +31,12 @@ import (
 func CreateAPIKeyHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -68,19 +68,6 @@ func CreateAPIKeyHandler(c echo.Context) error {
 			}
 		}
 		expiresAt = &parsedTime
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-		logger.Errorf("Failed to find user: %v", err)
-		return echo.ErrInternalServerError
 	}
 
 	count := db.Conn.Where("name = ?", req.Name).First(&models.APIKey{}).RowsAffected
@@ -143,5 +130,92 @@ func CreateAPIKeyHandler(c echo.Context) error {
 		ExpiresAt:   expiresAtStr,
 		CreatedAt:   apiKey.CreatedAt.Format(time.RFC3339),
 		Message:     "API key created successfully",
+	})
+}
+
+// GetAllAPIKeyHandler godoc
+// @Summary      Get all API keys (paginated)
+// @Description  Retrieves all API keys for the authenticated user, paginated.
+// @Tags         auth
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        page     query   int  false  "Page number (default 1)"
+// @Param        page_size query  int  false  "Page size (default 10, max 100)"
+// @Success      200 {object} APIKeyListResponse "Paginated list of API keys"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/auth/api-keys [get]
+func GetAllAPIKeyHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired authentication token, please login again",
+		}
+	}
+
+	page := 1
+	pageSize := 10
+	if p := c.QueryParam("page"); p != "" {
+		if _, err := fmt.Sscanf(p, "%d", &page); err != nil || page < 1 {
+			page = 1
+		}
+	}
+	if ps := c.QueryParam("page_size"); ps != "" {
+		if _, err := fmt.Sscanf(ps, "%d", &pageSize); err != nil || pageSize < 1 {
+			pageSize = 10
+		}
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	var total int64
+	var apiKeys []models.APIKey
+	db.Conn.Model(&models.APIKey{}).Where("user_id = ?", user.ID).Count(&total)
+	db.Conn.Where("user_id = ?", user.ID).
+		Order("created_at desc").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&apiKeys)
+
+	var data []APIKeyDetails
+	for _, key := range apiKeys {
+		var lastUsedAtStr *string
+		if key.LastUsedAt != nil {
+			str := key.LastUsedAt.Format(time.RFC3339)
+			lastUsedAtStr = &str
+		}
+
+		var expiresAtStr *string
+		if key.ExpiresAt != nil {
+			str := key.ExpiresAt.Format("2006-01-02")
+			expiresAtStr = &str
+		}
+
+		data = append(data, APIKeyDetails{
+			KeyID:       key.KeyID,
+			Name:        key.Name,
+			Description: key.Description,
+			CreatedAt:   key.CreatedAt.Format(time.RFC3339),
+			LastUsedAt:  lastUsedAtStr,
+			ExpiresAt:   expiresAtStr,
+		})
+	}
+
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	return c.JSON(http.StatusOK, APIKeyListResponse{
+		Data: data,
+		Pagination: PaginationDetails{
+			Page:       page,
+			PageSize:   pageSize,
+			Total:      total,
+			TotalPages: totalPages,
+		},
+		Message: "API keys retrieved successfully",
 	})
 }

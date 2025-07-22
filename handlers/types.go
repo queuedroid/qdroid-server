@@ -315,7 +315,7 @@ type CreateAPIKeyRequest struct {
 // swagger:model CreateAPIKeyResponse
 type CreateAPIKeyResponse struct {
 	// API key created
-	APIKey string `json:"api_key" example:"ak_jkdfkjdfkdfjkdlklklklkllklklklklklklklklklkl"`
+	APIKey string `json:"api_key" example:"ak_jkdfkjdfkdfjkdlklklkllklklklklklklklklklklkl"`
 	// Key ID of the created API key
 	KeyID string `json:"key_id" example:"ak_jkdfkjdfkdfjkd"`
 	// Name of the API key
@@ -340,10 +340,18 @@ type APIKeyDetails struct {
 	Description *string `json:"description" example:"This key is used for accessing the QDroid API."`
 	// Timestamp of when the API key was created
 	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
-	// Timestamp of when the API key was last updated
-	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
 	// Last used timestamp of the API key
 	LastUsedAt *string `json:"last_used_at" example:"2023-10-01T12:00:00Z"`
 	// Expiration date for the API key
 	ExpiresAt *string `json:"expires_at" example:"2024-12-31"`
+}
+
+// swagger:model APIKeyListResponse
+type APIKeyListResponse struct {
+	// List of API keys
+	Data []APIKeyDetails `json:"data"`
+	// Pagination details
+	Pagination PaginationDetails `json:"pagination"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"API keys retrieved successfully"`
 }

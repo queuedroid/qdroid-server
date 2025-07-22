@@ -86,10 +86,11 @@ func VerifyAuthMiddleware(authMethods ...AuthMethod) func(echo.HandlerFunc) echo
 			if isMethodAllowed(AuthMethodAPIKey) {
 				if after, ok := strings.CutPrefix(authHeader, "Bearer "); ok {
 					apiKeyValue := after
+					keyIDLength := 35
 
 					if apiKeyValue != "" && strings.HasPrefix(apiKeyValue, "ak_") {
-						if len(apiKeyValue) > 19 {
-							keyID := apiKeyValue[:19]
+						if len(apiKeyValue) >= keyIDLength {
+							keyID := apiKeyValue[:keyIDLength]
 
 							apiKey := models.APIKey{}
 							err := db.Conn.Where("key_id = ?", keyID).First(&apiKey).Error
