@@ -799,3 +799,169 @@ func GetQueueConnectionHandler(c echo.Context) error {
 		Message:     "Queue connection details retrieved successfully",
 	})
 }
+
+// PurgeQueueHandler godoc
+// @Summary      Purge a queue
+// @Description  Purges all messages from a specific queue bound to an exchange.
+// @Tags         queues
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        exchange_id    path    string  true  "Exchange ID"
+// @Param        queue_id       path    string  true  "Queue ID"
+// @Success      200 {object}  GenericResponse "Queue purged successfully"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      404 {object} echo.HTTPError     "Exchange or queue not found"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/{exchange_id}/queues/{queue_id}/purge [delete]
+func PurgeQueueHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
+	if err != nil {
+		logger.Error("Failed to initialize RabbitMQ client:", err)
+		return echo.ErrInternalServerError
+	}
+
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired authentication token, please login again",
+		}
+	}
+
+	exchangeID := c.Param("exchange_id")
+	queueID := c.Param("queue_id")
+	if exchangeID == "" {
+		logger.Error("Exchange ID is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Exchange ID is required",
+		}
+	}
+
+	if queueID == "" {
+		logger.Error("Queue ID is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Queue ID is required",
+		}
+	}
+
+	exchange := models.Exchange{}
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Exchange not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Exchange not found",
+			}
+		}
+		logger.Errorf("Failed to find exchange: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	queueName := strings.ReplaceAll(queueID, ".", "_")
+	if !rmqClient.HasQueueBinding(user.AccountID, queueName, exchange.ExchangeID) {
+		return &echo.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: "Queue not found",
+		}
+	}
+
+	if err := rmqClient.PurgeQueue(user.AccountID, queueName); err != nil {
+		logger.Errorf("Failed to purge queue in RabbitMQ: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	logger.Infof("Queue purged successfully.")
+	return c.JSON(http.StatusOK, GenericResponse{
+		Message: "Queue purged successfully",
+	})
+}
+
+// DeleteQueueHandler godoc
+// @Summary      Delete a queue
+// @Description  Deletes a specific queue bound to an exchange. This permanently removes the queue and all its messages.
+// @Tags         queues
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
+// @Param        exchange_id    path    string  true  "Exchange ID"
+// @Param        queue_id       path    string  true  "Queue ID"
+// @Success      200 {object}  GenericResponse "Queue deleted successfully"
+// @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      404 {object} echo.HTTPError     "Exchange or queue not found"
+// @Failure      500 {object} echo.HTTPError     "Internal server error"
+// @Router       /v1/exchanges/{exchange_id}/queues/{queue_id} [delete]
+func DeleteQueueHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
+	if err != nil {
+		logger.Error("Failed to initialize RabbitMQ client:", err)
+		return echo.ErrInternalServerError
+	}
+
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
+		return &echo.HTTPError{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid or expired authentication token, please login again",
+		}
+	}
+
+	exchangeID := c.Param("exchange_id")
+	queueID := c.Param("queue_id")
+	if exchangeID == "" {
+		logger.Error("Exchange ID is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Exchange ID is required",
+		}
+	}
+
+	if queueID == "" {
+		logger.Error("Queue ID is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Queue ID is required",
+		}
+	}
+
+	exchange := models.Exchange{}
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Exchange not found.")
+			return &echo.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Exchange not found",
+			}
+		}
+		logger.Errorf("Failed to find exchange: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	queueName := strings.ReplaceAll(queueID, ".", "_")
+	if !rmqClient.HasQueueBinding(user.AccountID, queueName, exchange.ExchangeID) {
+		return &echo.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: "Queue not found",
+		}
+	}
+
+	if err := rmqClient.DeleteQueue(user.AccountID, queueName); err != nil {
+		logger.Errorf("Failed to delete queue in RabbitMQ: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	logger.Infof("Queue deleted successfully.")
+	return c.JSON(http.StatusOK, GenericResponse{
+		Message: "Queue deleted successfully",
+	})
+}
