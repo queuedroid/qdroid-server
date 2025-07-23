@@ -216,7 +216,7 @@ func GetEventLogsHandler(c echo.Context) error {
 		Offset((page - 1) * pageSize).
 		Find(&eventLogs)
 
-	var data []EventLogDetails
+	var data []EventLogDetails = []EventLogDetails{}
 	for _, log := range eventLogs {
 		var category, status *string
 		if log.Category != nil {

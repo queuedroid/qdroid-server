@@ -390,7 +390,7 @@ func GetAllExchangesHandler(c echo.Context) error {
 		Offset((page - 1) * pageSize).
 		Find(&exchanges)
 
-	var data []ExchangeDetails
+	var data []ExchangeDetails = []ExchangeDetails{}
 	for _, ex := range exchanges {
 		data = append(data, ExchangeDetails{
 			ExchangeID:  ex.ExchangeID,
@@ -592,7 +592,7 @@ func GetExchangeQueuesHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	var data []QueueDetails
+	var data []QueueDetails = []QueueDetails{}
 	for _, queue := range queues {
 		queueDetail := QueueDetails{
 			Name:      queue["name"].(string),

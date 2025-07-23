@@ -185,7 +185,7 @@ func GetAllAPIKeyHandler(c echo.Context) error {
 		Offset((page - 1) * pageSize).
 		Find(&apiKeys)
 
-	var data []APIKeyDetails
+	var data []APIKeyDetails = []APIKeyDetails{}
 	for _, key := range apiKeys {
 		var lastUsedAtStr *string
 		if key.LastUsedAt != nil {
