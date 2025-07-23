@@ -14,6 +14,7 @@ import (
 	"qdroid-server/rabbitmq"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/nyaruka/phonenumbers"
 	"gorm.io/gorm"
@@ -250,7 +251,7 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 	}
 
 	messagePayload := map[string]string{
-		"sid":  "",
+		"sid":  uuid.New().String(),
 		"body": req.Content,
 		"to":   req.PhoneNumber,
 	}
