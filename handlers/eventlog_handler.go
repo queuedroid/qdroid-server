@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"qdroid-server/db"
+	"qdroid-server/middlewares"
 	"qdroid-server/models"
 
 	"github.com/labstack/echo/v4"
@@ -89,12 +90,12 @@ func LogMessageEventSuccessHandler(
 func GetEventLogsSummaryHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -111,9 +112,9 @@ func GetEventLogsSummaryHandler(c echo.Context) error {
 		Count  int64
 	}
 
-	err := db.Conn.Model(&models.EventLog{}).
+	err = db.Conn.Model(&models.EventLog{}).
 		Select("status, count(*) as count").
-		Where("user_id = ? AND category = ?", session.UserID, category).
+		Where("user_id = ? AND category = ?", user.ID, category).
 		Group("status").
 		Find(&results).Error
 
@@ -170,12 +171,12 @@ func GetEventLogsSummaryHandler(c echo.Context) error {
 func GetEventLogsHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -195,7 +196,7 @@ func GetEventLogsHandler(c echo.Context) error {
 		pageSize = 100
 	}
 
-	query := db.Conn.Model(&models.EventLog{}).Where("user_id = ?", session.UserID)
+	query := db.Conn.Model(&models.EventLog{}).Where("user_id = ?", user.ID)
 
 	if category := c.QueryParam("category"); category != "" {
 		query = query.Where("category = ?", category)

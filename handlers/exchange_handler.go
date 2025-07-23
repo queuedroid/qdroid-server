@@ -9,6 +9,7 @@ import (
 	"qdroid-server/commons"
 	"qdroid-server/crypto"
 	"qdroid-server/db"
+	"qdroid-server/middlewares"
 	"qdroid-server/models"
 	"qdroid-server/rabbitmq"
 	"strings"
@@ -42,12 +43,12 @@ func CreateExchangeHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -68,7 +69,7 @@ func CreateExchangeHandler(c echo.Context) error {
 		}
 	}
 
-	count := db.Conn.Where("label = ? AND user_id = ?", req.Label, session.UserID).First(&models.Exchange{}).RowsAffected
+	count := db.Conn.Where("label = ? AND user_id = ?", req.Label, user.ID).First(&models.Exchange{}).RowsAffected
 	if count > 0 {
 		logger.Errorf("Duplicate exchange label detected.")
 		return &echo.HTTPError{
@@ -80,20 +81,6 @@ func CreateExchangeHandler(c echo.Context) error {
 	exchangeID, err := crypto.GenerateRandomString("exch_", 16, "hex")
 	if err != nil {
 		logger.Errorf("Failed to generate exchange ID: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-
-		logger.Errorf("Failed to find user: %v", err)
 		return echo.ErrInternalServerError
 	}
 
@@ -159,12 +146,12 @@ func UpdateExchangeHandler(c echo.Context) error {
 	logger := c.Logger()
 	exchangeID := c.Param("exchange_id")
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -186,7 +173,7 @@ func UpdateExchangeHandler(c echo.Context) error {
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -200,7 +187,7 @@ func UpdateExchangeHandler(c echo.Context) error {
 	}
 
 	if req.Label != "" && req.Label != exchange.Label {
-		count := db.Conn.Where("label = ? AND user_id = ?", req.Label, session.UserID).First(&models.Exchange{}).RowsAffected
+		count := db.Conn.Where("label = ? AND user_id = ?", req.Label, user.ID).First(&models.Exchange{}).RowsAffected
 		if count > 0 {
 			logger.Errorf("Duplicate exchange label detected.")
 			return &echo.HTTPError{
@@ -253,17 +240,17 @@ func DeleteExchangeHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -273,20 +260,6 @@ func DeleteExchangeHandler(c echo.Context) error {
 		}
 
 		logger.Errorf("Failed to find exchange: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-
-		logger.Errorf("Failed to find user: %v", err)
 		return echo.ErrInternalServerError
 	}
 
@@ -336,17 +309,17 @@ func GetExchangeHandler(c echo.Context) error {
 	logger := c.Logger()
 	exchangeID := c.Param("exchange_id")
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -383,12 +356,12 @@ func GetExchangeHandler(c echo.Context) error {
 func GetAllExchangesHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -410,8 +383,8 @@ func GetAllExchangesHandler(c echo.Context) error {
 
 	var total int64
 	var exchanges []models.Exchange
-	db.Conn.Model(&models.Exchange{}).Where("user_id = ?", session.UserID).Count(&total)
-	db.Conn.Where("user_id = ?", session.UserID).
+	db.Conn.Model(&models.Exchange{}).Where("user_id = ?", user.ID).Count(&total)
+	db.Conn.Where("user_id = ?", user.ID).
 		Order("created_at desc").
 		Limit(pageSize).
 		Offset((page - 1) * pageSize).
@@ -467,12 +440,12 @@ func CreateAndBindQueueHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -507,21 +480,8 @@ func CreateAndBindQueueHandler(c echo.Context) error {
 		}
 	}
 
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-		logger.Errorf("Failed to find user: %v", err)
-		return echo.ErrInternalServerError
-	}
-
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found for binding.")
 			return &echo.HTTPError{
@@ -588,17 +548,17 @@ func GetExchangeQueuesHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -607,19 +567,6 @@ func GetExchangeQueuesHandler(c echo.Context) error {
 			}
 		}
 		logger.Errorf("Failed to find exchange: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-		logger.Errorf("Failed to find user: %v", err)
 		return echo.ErrInternalServerError
 	}
 
@@ -687,12 +634,12 @@ func GetExchangeQueuesHandler(c echo.Context) error {
 func GetExchangeConnectionHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -706,7 +653,7 @@ func GetExchangeConnectionHandler(c echo.Context) error {
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -715,19 +662,6 @@ func GetExchangeConnectionHandler(c echo.Context) error {
 			}
 		}
 		logger.Errorf("Failed to find exchange: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-		logger.Errorf("Failed to find user: %v", err)
 		return echo.ErrInternalServerError
 	}
 
@@ -783,12 +717,12 @@ func GetExchangeConnectionHandler(c echo.Context) error {
 func GetQueueConnectionHandler(c echo.Context) error {
 	logger := c.Logger()
 
-	session, ok := c.Get("session").(models.Session)
-	if !ok {
-		logger.Error("Session not found in context.")
+	user, err := middlewares.GetAuthenticatedUser(c)
+	if err != nil {
+		logger.Error("Failed to get authenticated user:", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
-			Message: "Invalid or expired session token, please login again",
+			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
@@ -811,7 +745,7 @@ func GetQueueConnectionHandler(c echo.Context) error {
 	}
 
 	exchange := models.Exchange{}
-	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, session.UserID).First(&exchange).Error; err != nil {
+	if err := db.Conn.Where("exchange_id = ? AND user_id = ?", exchangeID, user.ID).First(&exchange).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("Exchange not found.")
 			return &echo.HTTPError{
@@ -820,19 +754,6 @@ func GetQueueConnectionHandler(c echo.Context) error {
 			}
 		}
 		logger.Errorf("Failed to find exchange: %v", err)
-		return echo.ErrInternalServerError
-	}
-
-	user := models.User{}
-	if err := db.Conn.Where("id = ?", session.UserID).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Error("User not found.")
-			return &echo.HTTPError{
-				Code:    http.StatusNotFound,
-				Message: "User not found",
-			}
-		}
-		logger.Errorf("Failed to find user: %v", err)
 		return echo.ErrInternalServerError
 	}
 

@@ -183,7 +183,6 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 		return echo.ErrInternalServerError
 	}
 
-	// User is already available, no need to fetch again
 	var queueID string
 	var carrierInfo *string
 	logFailure := func(msg string) error {

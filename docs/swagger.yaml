@@ -3,6 +3,49 @@ definitions:
     properties:
       message: {}
     type: object
+  handlers.APIKeyDetails:
+    properties:
+      created_at:
+        description: Timestamp of when the API key was created
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      description:
+        description: Description of the API key
+        example: This key is used for accessing the QDroid API.
+        type: string
+      expires_at:
+        description: Expiration date for the API key
+        example: "2024-12-31"
+        type: string
+      key_id:
+        description: Key ID of the created API key
+        example: ak_jkdfkjdfkdfjkd
+        type: string
+      last_used_at:
+        description: Last used timestamp of the API key
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      name:
+        description: Name of the API key
+        example: My API Key
+        type: string
+    type: object
+  handlers.APIKeyListResponse:
+    properties:
+      data:
+        description: List of API keys
+        items:
+          $ref: '#/definitions/handlers.APIKeyDetails'
+        type: array
+      message:
+        description: Message indicating successful retrieval
+        example: API keys retrieved successfully
+        type: string
+      pagination:
+        allOf:
+        - $ref: '#/definitions/handlers.PaginationDetails'
+        description: Pagination details
+    type: object
   handlers.AuthResponse:
     properties:
       message:
@@ -41,7 +84,7 @@ definitions:
     properties:
       api_key:
         description: API key created
-        example: ak_jkdfkjdfkdfjkdlklklklkllklklklklklklklklklkl
+        example: ak_jkdfkjdfkdfjkdlklklkllklklklklklklklklklklkl
         type: string
       created_at:
         description: Timestamp of when the API key was created
@@ -53,11 +96,7 @@ definitions:
         type: string
       expires_at:
         description: Expiration date for the API key
-        example: "2024-12-31T23:59:59Z"
-        type: string
-      hashed_key:
-        description: Hashed key of the created API key
-        example: $2a$10$abcdefghijklmnopqrstuvwxyz
+        example: "2024-12-31"
         type: string
       key_id:
         description: Key ID of the created API key
@@ -516,6 +555,44 @@ info:
   contact: {}
 paths:
   /v1/auth/api-keys:
+    get:
+      description: Retrieves all API keys for the authenticated user, paginated.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of API keys
+          schema:
+            $ref: '#/definitions/handlers.APIKeyListResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get all API keys (paginated)
+      tags:
+      - auth
     post:
       description: Creates a new API key for the authenticated user.
       parameters:
@@ -556,6 +633,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Create API key
+      tags:
+      - auth
+  /v1/auth/api-keys/{key_id}:
+    delete:
+      description: Deletes an existing API key for the authenticated user.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: API Key ID
+        in: path
+        name: key_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API key deleted successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: API key not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Delete API key
       tags:
       - auth
   /v1/auth/login:
