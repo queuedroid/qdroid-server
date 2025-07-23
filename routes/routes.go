@@ -27,6 +27,7 @@ func RegisterRoutes(e *echo.Echo) {
 	api_v1.GET("/exchanges/:exchange_id/connection", handlers.GetExchangeConnectionHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.GET("/exchanges/:exchange_id/queues/:queue_id/connection", handlers.GetQueueConnectionHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.DELETE("/exchanges/:exchange_id/queues/:queue_id/purge", handlers.PurgeQueueHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
+	api_v1.DELETE("/exchanges/:exchange_id/queues/:queue_id", handlers.DeleteQueueHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.POST("/exchanges/:exchange_id/queues", handlers.CreateAndBindQueueHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.GET("/exchanges/:exchange_id/queues", handlers.GetExchangeQueuesHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.GET("/users/", handlers.GetUserHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession))

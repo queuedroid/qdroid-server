@@ -533,3 +533,27 @@ func (c *Client) PurgeQueue(vhost, queue string) error {
 	commons.Logger.Infof("RabbitMQ queue purged: %s in vhost: %s", queue, vhost)
 	return nil
 }
+
+func (c *Client) DeleteQueue(vhost, queue string) error {
+	commons.Logger.Debugf("Deleting RabbitMQ queue: %s in vhost: %s", queue, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/queues/%s/%s", url.PathEscape(vhost), url.PathEscape(queue))}
+	u := c.HTTPURL.ResolveReference(rel)
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to delete queue %s in vhost %s: %s", queue, vhost, resp.Status)
+		return fmt.Errorf("failed to delete queue: %s", resp.Status)
+	}
+	commons.Logger.Infof("RabbitMQ queue deleted: %s in vhost: %s", queue, vhost)
+	return nil
+}
