@@ -1079,6 +1079,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/exchanges/{exchange_id}/queues/{queue_id}/purge": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Purges all messages from a specific queue bound to an exchange.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "queues"
+                ],
+                "summary": "Purge a queue",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exchange ID",
+                        "name": "exchange_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Queue ID",
+                        "name": "queue_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Queue purged successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Exchange or queue not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/messages/bulk-send": {
             "post": {
                 "security": [

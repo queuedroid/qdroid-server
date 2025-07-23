@@ -509,3 +509,27 @@ func (c *Client) Publish(vhost, exchange, routingKey string, body []byte, conten
 	commons.Logger.Infof("Message published to exchange %s with routing key %s", exchange, routingKey)
 	return nil
 }
+
+func (c *Client) PurgeQueue(vhost, queue string) error {
+	commons.Logger.Debugf("Purging RabbitMQ queue: %s in vhost: %s", queue, vhost)
+	rel := &url.URL{Path: fmt.Sprintf("/api/queues/%s/%s/contents", url.PathEscape(vhost), url.PathEscape(queue))}
+	u := c.HTTPURL.ResolveReference(rel)
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(c.Username, c.Password)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to purge queue %s in vhost %s: %s", queue, vhost, resp.Status)
+		return fmt.Errorf("failed to purge queue: %s", resp.Status)
+	}
+	commons.Logger.Infof("RabbitMQ queue purged: %s in vhost: %s", queue, vhost)
+	return nil
+}

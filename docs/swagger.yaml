@@ -1268,6 +1268,53 @@ paths:
       summary: Get queue connection details
       tags:
       - queues
+  /v1/exchanges/{exchange_id}/queues/{queue_id}/purge:
+    delete:
+      consumes:
+      - application/json
+      description: Purges all messages from a specific queue bound to an exchange.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Exchange ID
+        in: path
+        name: exchange_id
+        required: true
+        type: string
+      - description: Queue ID
+        in: path
+        name: queue_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Queue purged successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Exchange or queue not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Purge a queue
+      tags:
+      - queues
   /v1/messages/bulk-send:
     post:
       consumes:
