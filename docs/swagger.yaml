@@ -187,6 +187,14 @@ definitions:
         example: "2023-10-01T12:00:00Z"
         type: string
     type: object
+  handlers.DeleteAccountRequest:
+    properties:
+      password:
+        description: |-
+          User's password
+          required: true
+        type: string
+    type: object
   handlers.EventLogDetails:
     properties:
       carrier:
@@ -1484,6 +1492,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Get user details
+      tags:
+      - users
+  /v1/users/delete-account:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the authenticated user's account after password confirmation.
+        This action is irreversible and will delete all associated data including
+        exchanges, queues, and RabbitMQ virtual host.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Account deletion request payload with password confirmation
+        in: body
+        name: deleteAccountRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deleted successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request, missing required fields
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid password or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Delete user account
       tags:
       - users
 swagger: "2.0"

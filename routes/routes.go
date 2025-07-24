@@ -31,6 +31,7 @@ func RegisterRoutes(e *echo.Echo) {
 	api_v1.POST("/exchanges/:exchange_id/queues", handlers.CreateAndBindQueueHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.GET("/exchanges/:exchange_id/queues", handlers.GetExchangeQueuesHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.GET("/users/", handlers.GetUserHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession))
+	api_v1.DELETE("/users/", handlers.DeleteAccountHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession))
 	api_v1.POST("/messages/send", handlers.SendMessageHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.POST("/messages/bulk-send", handlers.SendBulkMessagesHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
 	api_v1.GET("/event-logs", handlers.GetEventLogsHandler, middlewares.VerifyAuthMiddleware(middlewares.AuthMethodSession, middlewares.AuthMethodAPIKey))
