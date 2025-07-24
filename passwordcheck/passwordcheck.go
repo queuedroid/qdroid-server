@@ -30,12 +30,14 @@ func ValidatePassword(ctx context.Context, password string) error {
 		return errors.New("password must contain at least one special character (e.g., !@#$%)")
 	}
 
-	pwned, err := checkPasswordPwned(ctx, password)
-	if err != nil {
-		commons.Logger.Error("Error checking pwned passwords:", err)
-	}
-	if pwned {
-		return errors.New("password has been found in data breaches (pwned); choose a different one")
+	if commons.GetEnv("PWNED_PASSWORDS_ENABLED", "true") == "true" {
+		pwned, err := checkPasswordPwned(ctx, password)
+		if err != nil {
+			commons.Logger.Error("Error checking pwned passwords:", err)
+		}
+		if pwned {
+			return errors.New("password has been found in data breaches (pwned); choose a different one")
+		}
 	}
 
 	return nil

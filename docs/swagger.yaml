@@ -80,6 +80,21 @@ definitions:
         example: Bulk message processing started. Check your logs for more details.
         type: string
     type: object
+  handlers.ChangePasswordRequest:
+    properties:
+      current_password:
+        description: |-
+          Current password
+          required: true
+        example: MySecretPassword@123
+        type: string
+      new_password:
+        description: |-
+          New password
+          required: true
+        example: MyNewPassword@456
+        type: string
+    type: object
   handlers.CreateAPIKeyResponse:
     properties:
       api_key:
@@ -193,6 +208,7 @@ definitions:
         description: |-
           User's password
           required: true
+        example: MySecretPassword@123
         type: string
     type: object
   handlers.EventLogDetails:
@@ -1492,6 +1508,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Get user details
+      tags:
+      - users
+  /v1/users/change-password:
+    put:
+      consumes:
+      - application/json
+      description: Changes the authenticated user's password after validating the
+        current password. The new password must meet security requirements.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Password change request payload with current and new password
+        in: body
+        name: changePasswordRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request, missing required fields or password validation
+            failed
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid current password or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Change user password
       tags:
       - users
   /v1/users/delete-account:

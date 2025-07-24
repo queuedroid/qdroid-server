@@ -1394,6 +1394,71 @@
                 }
             }
         },
+        "/v1/users/change-password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Changes the authenticated user's password after validating the current password. The new password must meet security requirements.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Password change request payload with current and new password",
+                        "name": "changePasswordRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields or password validation failed",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid current password or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/users/delete-account": {
             "delete": {
                 "security": [
@@ -1569,6 +1634,21 @@
                 }
             }
         },
+        "handlers.ChangePasswordRequest": {
+            "type": "object",
+            "properties": {
+                "current_password": {
+                    "description": "Current password\nrequired: true",
+                    "type": "string",
+                    "example": "MySecretPassword@123"
+                },
+                "new_password": {
+                    "description": "New password\nrequired: true",
+                    "type": "string",
+                    "example": "MyNewPassword@456"
+                }
+            }
+        },
         "handlers.CreateAPIKeyResponse": {
             "type": "object",
             "properties": {
@@ -1714,7 +1794,8 @@
             "properties": {
                 "password": {
                     "description": "User's password\nrequired: true",
-                    "type": "string"
+                    "type": "string",
+                    "example": "MySecretPassword@123"
                 }
             }
         },

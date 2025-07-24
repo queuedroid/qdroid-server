@@ -360,5 +360,15 @@ type APIKeyListResponse struct {
 type DeleteAccountRequest struct {
 	// User's password
 	// required: true
-	Password string `json:"password"`
+	Password string `json:"password" example:"MySecretPassword@123"`
+}
+
+// swagger:model ChangePasswordRequest
+type ChangePasswordRequest struct {
+	// Current password
+	// required: true
+	CurrentPassword string `json:"current_password" example:"MySecretPassword@123"`
+	// New password
+	// required: true
+	NewPassword string `json:"new_password" example:"MyNewPassword@456"`
 }
