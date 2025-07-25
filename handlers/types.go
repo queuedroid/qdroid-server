@@ -355,3 +355,20 @@ type APIKeyListResponse struct {
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"API keys retrieved successfully"`
 }
+
+// swagger:model DeleteAccountRequest
+type DeleteAccountRequest struct {
+	// User's password
+	// required: true
+	Password string `json:"password" example:"MySecretPassword@123"`
+}
+
+// swagger:model ChangePasswordRequest
+type ChangePasswordRequest struct {
+	// Current password
+	// required: true
+	CurrentPassword string `json:"current_password" example:"MySecretPassword@123"`
+	// New password
+	// required: true
+	NewPassword string `json:"new_password" example:"MyNewPassword@456"`
+}

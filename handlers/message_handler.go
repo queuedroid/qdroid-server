@@ -18,6 +18,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nyaruka/phonenumbers"
 	"gorm.io/gorm"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // SendMessageHandler godoc
@@ -62,7 +64,24 @@ func SendMessageHandler(c echo.Context) error {
 		}
 	}
 
-	httpErr := processMessage(req, user, logger, rmqClient)
+	conn, ch, err := rmqClient.CreateAMQPConnection(user.AccountID)
+	if err != nil {
+		logger.Errorf("Failed to create RabbitMQ connection: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	defer func() {
+		if ch != nil {
+			logger.Debug("Closing RabbitMQ channel")
+			ch.Close()
+		}
+		if conn != nil {
+			logger.Debug("Closing RabbitMQ connection")
+			conn.Close()
+		}
+	}()
+
+	httpErr := processMessage(req, user, logger, rmqClient, conn, ch)
 
 	if httpErr != nil {
 		return httpErr
@@ -121,9 +140,28 @@ func SendBulkMessagesHandler(c echo.Context) error {
 		}
 	}
 
-	for _, msg := range req.Messages {
-		go processMessage(msg, user, logger, rmqClient)
-	}
+	go func() {
+		conn, ch, err := rmqClient.CreateAMQPConnection(user.AccountID)
+		if err != nil {
+			logger.Errorf("Failed to create RabbitMQ connection: %v", err)
+			return
+		}
+
+		defer func() {
+			if ch != nil {
+				logger.Debug("Closing RabbitMQ channel")
+				ch.Close()
+			}
+			if conn != nil {
+				logger.Debug("Closing RabbitMQ connection")
+				conn.Close()
+			}
+		}()
+
+		for _, msg := range req.Messages {
+			processMessage(msg, user, logger, rmqClient, conn, ch)
+		}
+	}()
 
 	return c.JSON(http.StatusAccepted, BulkSendMessageResponse{
 		Message: "Bulk message processing started. Check your logs for more details.",
@@ -131,7 +169,7 @@ func SendBulkMessagesHandler(c echo.Context) error {
 	})
 }
 
-func processMessage(req SendMessageRequest, user *models.User, logger echo.Logger, rmqClient *rabbitmq.Client) *echo.HTTPError {
+func processMessage(req SendMessageRequest, user *models.User, logger echo.Logger, rmqClient *rabbitmq.Client, conn *amqp.Connection, ch *amqp.Channel) *echo.HTTPError {
 	if req.ExchangeID == "" {
 		logger.Error("Missing ExchangeID in message request.")
 		return &echo.HTTPError{
@@ -271,6 +309,8 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 		queueID,
 		messageBytes,
 		"",
+		conn,
+		ch,
 	); err != nil {
 		logger.Errorf("Failed to publish message to RabbitMQ: %v", err)
 		return &echo.HTTPError{

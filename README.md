@@ -125,6 +125,7 @@ Edit `.env` for your setup. Key variables:
 - `CORS_ORIGINS` - Allowed origins
 - `RABBITMQ_API_URL` - RabbitMQ management API URL (default: `http://localhost:15672`)
 - `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` - RabbitMQ management credentials
+- `PWNED_PASSWORDS_ENABLED` - Enable/disable pwned password checking (default: `true`)
 
 ---
 

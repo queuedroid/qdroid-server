@@ -55,7 +55,7 @@ func NewClient(c RabbitMQConfig) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) createAMQPConnection(vhost string) (*amqp.Connection, *amqp.Channel, error) {
+func (c *Client) CreateAMQPConnection(vhost string) (*amqp.Connection, *amqp.Channel, error) {
 	amqpURL := *c.AMQPURL
 	amqpURL.Path = url.PathEscape(vhost)
 	commons.Logger.Debugf("Connecting to RabbitMQ AMQP URL: %s", amqpURL.String())
@@ -462,21 +462,10 @@ func (c *Client) GetQueuesForExchange(vhost, exchange string, page, pageSize int
 	return response.Items, paginationMeta, nil
 }
 
-func (c *Client) Publish(vhost, exchange, routingKey string, body []byte, contentType string) error {
-	conn, ch, err := c.createAMQPConnection(vhost)
-	if err != nil {
-		return err
+func (c *Client) Publish(vhost, exchange, routingKey string, body []byte, contentType string, conn *amqp.Connection, ch *amqp.Channel) error {
+	if conn == nil || ch == nil {
+		return fmt.Errorf("connection and channel must be provided")
 	}
-	defer func() {
-		if ch != nil {
-			commons.Logger.Debugf("Closing AMQP channel for vhost %s", vhost)
-			ch.Close()
-		}
-		if conn != nil {
-			commons.Logger.Debugf("Closing AMQP connection for vhost %s", vhost)
-			conn.Close()
-		}
-	}()
 
 	if contentType == "" {
 		contentType = "application/json"
@@ -487,7 +476,7 @@ func (c *Client) Publish(vhost, exchange, routingKey string, body []byte, conten
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err = ch.PublishWithContext(
+	err := ch.PublishWithContext(
 		ctx,
 		exchange,
 		routingKey,
