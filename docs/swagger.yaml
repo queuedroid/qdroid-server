@@ -1391,7 +1391,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Sends multiple messages in bulk. Processing is done asynchronously.
+      - multipart/form-data
+      description: Sends multiple messages in bulk. Accepts JSON payload or CSV file
+        upload. Processing is done asynchronously.
       parameters:
       - default: Bearer <your_token_here>
         description: Bearer token for authentication. Replace <your_token_here> with
@@ -1400,12 +1402,15 @@ paths:
         name: Authorization
         required: true
         type: string
-      - description: Bulk send message request payload
+      - description: Bulk send message request payload (for JSON)
         in: body
         name: bulkSendMessageRequest
-        required: true
         schema:
           $ref: '#/definitions/handlers.BulkSendMessageRequest'
+      - description: CSV file containing message data (for CSV upload)
+        in: formData
+        name: file
+        type: file
       produces:
       - application/json
       responses:
@@ -1414,11 +1419,19 @@ paths:
           schema:
             $ref: '#/definitions/handlers.BulkSendMessageResponse'
         "400":
-          description: Bad request, missing required fields or empty messages array
+          description: Bad request, missing required fields or invalid data
           schema:
             $ref: '#/definitions/echo.HTTPError'
         "401":
           description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "413":
+          description: File too large (CSV only)
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "415":
+          description: Unsupported media type, please use application/json or multipart/form-data
           schema:
             $ref: '#/definitions/echo.HTTPError'
         "500":

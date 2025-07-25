@@ -3,9 +3,11 @@
 package handlers
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"qdroid-server/commons"
 	"qdroid-server/db"
@@ -94,16 +96,19 @@ func SendMessageHandler(c echo.Context) error {
 
 // SendBulkMessagesHandler godoc
 // @Summary      Send multiple messages
-// @Description  Sends multiple messages in bulk. Processing is done asynchronously.
+// @Description  Sends multiple messages in bulk. Accepts JSON payload or CSV file upload. Processing is done asynchronously.
 // @Tags         messages
-// @Accept       json
+// @Accept       json,multipart/form-data
 // @Produce      json
 // @Security     BearerAuth
 // @Param        Authorization  header  string  true  "Bearer token for authentication. Replace <your_token_here> with a valid token."  default(Bearer <your_token_here>)
-// @Param        bulkSendMessageRequest  body  BulkSendMessageRequest  true  "Bulk send message request payload"
+// @Param        bulkSendMessageRequest  body  BulkSendMessageRequest  false  "Bulk send message request payload (for JSON)"
+// @Param        file  formData  file  false  "CSV file containing message data (for CSV upload)"
 // @Success      202 {object} BulkSendMessageResponse "Bulk message processing started"
-// @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields or empty messages array"
+// @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields or invalid data"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      413 {object} echo.HTTPError     "File too large (CSV only)"
+// @Failure      415 {object} echo.HTTPError     "Unsupported media type, please use application/json or multipart/form-data"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
 // @Router       /v1/messages/bulk-send [post]
 func SendBulkMessagesHandler(c echo.Context) error {
@@ -111,32 +116,53 @@ func SendBulkMessagesHandler(c echo.Context) error {
 
 	rmqClient, err := rabbitmq.NewClient(rabbitmq.RabbitMQConfig{})
 	if err != nil {
-		logger.Error("Failed to initialize RabbitMQ client:", err)
+		logger.Errorf("Failed to initialize RabbitMQ client: %v", err)
 		return echo.ErrInternalServerError
 	}
 
 	user, err := middlewares.GetAuthenticatedUser(c)
 	if err != nil {
-		logger.Error("Failed to get authenticated user:", err)
+		logger.Errorf("Failed to get authenticated user: %v", err)
 		return &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
 			Message: "Invalid or expired authentication token, please login again",
 		}
 	}
 
-	var req BulkSendMessageRequest
-	if err := c.Bind(&req); err != nil {
-		logger.Error("Invalid bulk send message request payload:", err)
-		return &echo.HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid request payload, please ensure it is well-formed and has content-type application/json header",
-		}
-	}
+	var messages []SendMessageRequest
+	var messageCount int
 
-	if len(req.Messages) == 0 {
+	contentType := c.Request().Header.Get("Content-Type")
+	if strings.Contains(contentType, "multipart/form-data") {
+		messages, err = parseCSVFromRequest(c, logger, user.ID)
+		if err != nil {
+			return err
+		}
+		messageCount = len(messages)
+	} else if strings.Contains(contentType, "application/json") {
+		var req BulkSendMessageRequest
+		if err := c.Bind(&req); err != nil {
+			logger.Errorf("Invalid bulk send message request payload: %v", err)
+			return &echo.HTTPError{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request payload, please ensure it is well-formed and has content-type application/json header",
+			}
+		}
+
+		if len(req.Messages) == 0 {
+			return &echo.HTTPError{
+				Code:    http.StatusBadRequest,
+				Message: "messages field must be a non-empty array",
+			}
+		}
+
+		messages = req.Messages
+		messageCount = len(messages)
+	} else {
+		logger.Errorf("Unsupported content type: %v", contentType)
 		return &echo.HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: "messages field must be a non-empty array",
+			Code:    http.StatusUnsupportedMediaType,
+			Message: "Unsupported content type, please use application/json or multipart/form-data",
 		}
 	}
 
@@ -158,15 +184,184 @@ func SendBulkMessagesHandler(c echo.Context) error {
 			}
 		}()
 
-		for _, msg := range req.Messages {
+		for _, msg := range messages {
 			processMessage(msg, user, logger, rmqClient, conn, ch)
 		}
 	}()
 
 	return c.JSON(http.StatusAccepted, BulkSendMessageResponse{
 		Message: "Bulk message processing started. Check your logs for more details.",
-		Count:   len(req.Messages),
+		Count:   messageCount,
 	})
+}
+
+func parseCSVFromRequest(c echo.Context, logger echo.Logger, userID uint) ([]SendMessageRequest, error) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		logger.Errorf("Failed to get uploaded file: %v", err)
+		return nil, &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "No file uploaded or invalid file format",
+		}
+	}
+
+	maxSize := int64(10 * 1024 * 1024)
+	if file.Size > maxSize {
+		logger.Errorf("Uploaded %s file with size %d exceeds maximum size of 10MB", file.Filename, file.Size)
+		return nil, &echo.HTTPError{
+			Code:    http.StatusRequestEntityTooLarge,
+			Message: "File size exceeds maximum limit of 10MB",
+		}
+	}
+
+	if !strings.HasSuffix(strings.ToLower(file.Filename), ".csv") {
+		return nil, &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Only CSV files are allowed",
+		}
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		logger.Errorf("Failed to open uploaded file: %v", err)
+		return nil, echo.ErrInternalServerError
+	}
+	defer src.Close()
+
+	messages, err := parseCSVMessages(src, userID)
+	if err != nil {
+		logger.Errorf("Failed to parse CSV: %v", err)
+		return nil, &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("Invalid CSV format: %v", err),
+		}
+	}
+
+	if len(messages) == 0 {
+		logger.Warn("No valid messages found in CSV file")
+		return nil, &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "No valid messages found in CSV file",
+		}
+	}
+
+	return messages, nil
+}
+
+func parseCSVMessages(reader io.Reader, userID uint) ([]SendMessageRequest, error) {
+	csvReader := csv.NewReader(reader)
+	csvReader.TrimLeadingSpace = true
+
+	header, err := csvReader.Read()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CSV header: %w", err)
+	}
+
+	columnMap := make(map[string]int)
+	requiredColumns := []string{"exchange_id", "phone_number", "content"}
+
+	for i, col := range header {
+		columnMap[strings.ToLower(strings.TrimSpace(col))] = i
+	}
+
+	for _, reqCol := range requiredColumns {
+		if _, exists := columnMap[reqCol]; !exists {
+			return nil, fmt.Errorf("missing required column: %s", reqCol)
+		}
+	}
+
+	var messages []SendMessageRequest
+	rowNum := 1
+
+	for {
+		row, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to read CSV row %d: %v", rowNum+1, err)
+			_ = LogMessageEventFailureHandler(
+				nil,
+				nil,
+				userID,
+				&errMsg,
+				nil,
+				nil,
+				nil,
+			)
+			rowNum++
+			continue
+		}
+
+		if isEmptyRow(row) {
+			rowNum++
+			continue
+		}
+
+		msg, err := parseMessageFromRow(row, columnMap)
+		if err != nil {
+			errMsg := fmt.Sprintf("invalid CSV row %d: %v", rowNum+1, err)
+			_ = LogMessageEventFailureHandler(
+				nil,
+				nil,
+				userID,
+				&errMsg,
+				nil,
+				nil,
+				nil,
+			)
+			rowNum++
+			continue
+		}
+
+		messages = append(messages, msg)
+		rowNum++
+	}
+
+	return messages, nil
+}
+
+func isEmptyRow(row []string) bool {
+	for _, cell := range row {
+		if strings.TrimSpace(cell) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func parseMessageFromRow(row []string, columnMap map[string]int) (SendMessageRequest, error) {
+	var msg SendMessageRequest
+
+	if idx, exists := columnMap["exchange_id"]; exists && idx < len(row) {
+		msg.ExchangeID = strings.TrimSpace(row[idx])
+	}
+	if msg.ExchangeID == "" {
+		return msg, errors.New("exchange_id is required")
+	}
+
+	if idx, exists := columnMap["phone_number"]; exists && idx < len(row) {
+		msg.PhoneNumber = strings.TrimSpace(row[idx])
+	}
+	if msg.PhoneNumber == "" {
+		return msg, errors.New("phone_number is required")
+	}
+
+	if idx, exists := columnMap["content"]; exists && idx < len(row) {
+		msg.Content = strings.TrimSpace(row[idx])
+	}
+	if msg.Content == "" {
+		return msg, errors.New("content is required")
+	}
+
+	if idx, exists := columnMap["queue_id"]; exists && idx < len(row) {
+		queueID := strings.TrimSpace(row[idx])
+		if queueID != "" {
+			msg.QueueID = &queueID
+		}
+	}
+
+	return msg, nil
 }
 
 func processMessage(req SendMessageRequest, user *models.User, logger echo.Logger, rmqClient *rabbitmq.Client, conn *amqp.Connection, ch *amqp.Channel) *echo.HTTPError {

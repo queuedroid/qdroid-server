@@ -1215,9 +1215,10 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Sends multiple messages in bulk. Processing is done asynchronously.",
+                "description": "Sends multiple messages in bulk. Accepts JSON payload or CSV file upload. Processing is done asynchronously.",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1236,13 +1237,18 @@
                         "required": true
                     },
                     {
-                        "description": "Bulk send message request payload",
+                        "description": "Bulk send message request payload (for JSON)",
                         "name": "bulkSendMessageRequest",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/handlers.BulkSendMessageRequest"
                         }
+                    },
+                    {
+                        "type": "file",
+                        "description": "CSV file containing message data (for CSV upload)",
+                        "name": "file",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1253,13 +1259,25 @@
                         }
                     },
                     "400": {
-                        "description": "Bad request, missing required fields or empty messages array",
+                        "description": "Bad request, missing required fields or invalid data",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "413": {
+                        "description": "File too large (CSV only)",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported media type, please use application/json or multipart/form-data",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
