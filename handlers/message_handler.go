@@ -484,7 +484,7 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 		}
 	}
 
-	messagePayload := map[string]interface{}{
+	messagePayload := map[string]any{
 		"id":   rand.IntN(1000000000),
 		"sid":  uuid.New().String(),
 		"body": req.Content,
