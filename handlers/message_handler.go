@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"qdroid-server/commons"
 	"qdroid-server/db"
@@ -483,7 +484,8 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 		}
 	}
 
-	messagePayload := map[string]string{
+	messagePayload := map[string]interface{}{
+		"id":   rand.IntN(1000000000),
 		"sid":  uuid.New().String(),
 		"body": req.Content,
 		"to":   req.PhoneNumber,
