@@ -61,7 +61,7 @@ func GetUserHandler(c echo.Context) error {
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid password or expired session token"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
-// @Router       /v1/users/delete-account [delete]
+// @Router       /v1/users/ [delete]
 func DeleteAccountHandler(c echo.Context) error {
 	logger := c.Logger()
 

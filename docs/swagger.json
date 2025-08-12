@@ -1410,6 +1410,69 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes the authenticated user's account after password confirmation. This action is irreversible and will delete all associated data including exchanges, queues, and RabbitMQ virtual host.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete user account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Account deletion request payload with password confirmation",
+                        "name": "deleteAccountRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeleteAccountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid password or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
             }
         },
         "/v1/users/change-password": {
@@ -1464,71 +1527,6 @@
                     },
                     "401": {
                         "description": "Unauthorized, invalid current password or expired session token",
-                        "schema": {
-                            "$ref": "#/definitions/echo.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/echo.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/users/delete-account": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deletes the authenticated user's account after password confirmation. This action is irreversible and will delete all associated data including exchanges, queues, and RabbitMQ virtual host.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Delete user account",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "Bearer \u003cyour_token_here\u003e",
-                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "description": "Account deletion request payload with password confirmation",
-                        "name": "deleteAccountRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeleteAccountRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Account deleted successfully",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.GenericResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request, missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/echo.HTTPError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized, invalid password or expired session token",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
