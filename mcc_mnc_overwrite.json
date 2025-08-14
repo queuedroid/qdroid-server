@@ -1,0 +1,11 @@
+{
+  "lookup": [
+    {
+      "prefix_e164": 237687,
+      "Country": "CAMEROON",
+      "Network Description": "Mobile - Orange",
+      "mccmnc_e212": 62402,
+      "mccmnc_secondary": ""
+    }
+  ]
+}
