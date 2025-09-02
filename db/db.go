@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"os"
 	"qdroid-server/commons"
+	"qdroid-server/migrations"
 	"qdroid-server/models"
 	"strings"
 	"time"
 
+	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -115,9 +117,14 @@ func InitDB() {
 
 func MigrateDB() {
 	commons.Logger.Info("Running database migrations")
-	err := Conn.AutoMigrate(models.AllModels...)
-	if err != nil {
-		commons.Logger.Errorf("Database migration failed: %v", err)
+	if err := Conn.AutoMigrate(models.AllModels...); err != nil {
+		commons.Logger.Errorf("Schema migration failed: %v", err)
+		os.Exit(1)
+	}
+
+	m := gormigrate.New(Conn, gormigrate.DefaultOptions, migrations.List())
+	if err := m.Migrate(); err != nil {
+		commons.Logger.Errorf("Data migrations failed: %v", err)
 		os.Exit(1)
 	}
 	commons.Logger.Info("Database migration completed")

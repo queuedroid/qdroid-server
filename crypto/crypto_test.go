@@ -8,6 +8,8 @@ import (
 )
 
 func TestHashPassword(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "12345678901234567890123456789012")
+	t.Setenv("HASHING_PEPPER", "test-pepper-for-hashing-operations")
 	crypto := NewCrypto()
 	password := "testpassword123"
 
@@ -31,6 +33,8 @@ func TestHashPassword(t *testing.T) {
 }
 
 func TestVerifyPassword(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "12345678901234567890123456789012")
+	t.Setenv("HASHING_PEPPER", "test-pepper-for-hashing-operations")
 	crypto := NewCrypto()
 	password := "testpassword123"
 	wrongPassword := "wrongpassword"
@@ -57,6 +61,8 @@ func TestVerifyPassword(t *testing.T) {
 }
 
 func TestEncryptDecryptData(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "12345678901234567890123456789012")
+	t.Setenv("HASHING_PEPPER", "test-pepper-for-hashing-operations")
 	crypto := NewCrypto()
 	testData := []byte("This is test data to encrypt")
 
@@ -90,6 +96,8 @@ func TestEncryptDecryptData(t *testing.T) {
 }
 
 func TestHashData(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "12345678901234567890123456789012")
+	t.Setenv("HASHING_PEPPER", "test-pepper-for-hashing-operations")
 	crypto := NewCrypto()
 	testData := []byte("test data for hashing")
 
@@ -128,6 +136,8 @@ func TestHashData(t *testing.T) {
 }
 
 func TestVerifyHash(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "12345678901234567890123456789012")
+	t.Setenv("HASHING_PEPPER", "test-pepper-for-hashing-operations")
 	crypto := NewCrypto()
 	testData := []byte("test data for hash verification")
 
@@ -162,6 +172,8 @@ func TestVerifyHash(t *testing.T) {
 }
 
 func TestEncryptDecryptEdgeCases(t *testing.T) {
+	t.Setenv("ENCRYPTION_KEY", "12345678901234567890123456789012")
+	t.Setenv("HASHING_PEPPER", "test-pepper-for-hashing-operations")
 	crypto := NewCrypto()
 
 	empty := []byte{}

@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"qdroid-server/commons"
 	"strconv"
+	"strings"
 
 	"github.com/alexedwards/argon2id"
 )
@@ -53,8 +54,14 @@ func NewCrypto() *Crypto {
 		}
 	}
 
-	encryptionKey = commons.GetEnv("ENCRYPTION_KEY", "12345678901234567890123456789012")
-	hashingPepper = commons.GetEnv("HASHING_PEPPER", "12345678901234567890123456789012")
+	encryptionKey = commons.GetEnv("ENCRYPTION_KEY", "")
+	if encryptionKey == "" {
+		panic("ENCRYPTION_KEY environment variable must be set for secure operation")
+	}
+	hashingPepper = commons.GetEnv("HASHING_PEPPER", "")
+	if hashingPepper == "" {
+		panic("HASHING_PEPPER environment variable must be set for secure operation")
+	}
 
 	return &Crypto{
 		ArgonTime:     argonTime,
@@ -97,7 +104,7 @@ func (c *Crypto) VerifyPassword(password, encodedHash string) error {
 }
 
 func GenerateRandomString(prefix string, length int, encoding string) (string, error) {
-	supported_encodings := []string{"hex", "base64"}
+	supportedEncodings := []string{"hex", "base64"}
 
 	b := make([]byte, length)
 	if _, err := rand.Read(b); err != nil {
@@ -110,7 +117,7 @@ func GenerateRandomString(prefix string, length int, encoding string) (string, e
 	case "base64":
 		return prefix + base64.StdEncoding.EncodeToString(b), nil
 	default:
-		return "", fmt.Errorf("unsupported encoding: %s, Supported encodings are: %s", encoding, supported_encodings)
+		return "", fmt.Errorf("unsupported encoding: %s, Supported encodings are: %s", encoding, strings.Join(supportedEncodings, ", "))
 	}
 }
 
