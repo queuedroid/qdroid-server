@@ -38,13 +38,31 @@ func GetUserHandler(c echo.Context) error {
 		}
 	}
 
+	newCrypto := crypto.NewCrypto()
+
+	decryptedEmail, err := newCrypto.DecryptData(user.EmailEncrypted, "AES-GCM")
+	if err != nil {
+		logger.Error("Failed to decrypt email:", err)
+		return echo.ErrInternalServerError
+	}
+
+	var fullName *string
+	if user.FullNameEncrypted != nil {
+		decryptedFullName, err := newCrypto.DecryptData(*user.FullNameEncrypted, "AES-GCM")
+		if err != nil {
+			logger.Error("Failed to decrypt full name:", err)
+			return echo.ErrInternalServerError
+		}
+		fullNameStr := string(decryptedFullName)
+		fullName = &fullNameStr
+	}
+
 	return c.JSON(http.StatusOK, GetUserResponse{
 		Message:      "User retrieved successfully",
 		AccountID:    user.AccountID,
 		AccountToken: user.AccountToken,
-		Email:        user.Email,
-		PhoneNumber:  user.PhoneNumber,
-		FullName:     user.FullName,
+		Email:        string(decryptedEmail),
+		FullName:     fullName,
 	})
 }
 

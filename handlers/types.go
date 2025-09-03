@@ -12,8 +12,6 @@ type SignupRequest struct {
 	Email string `json:"email" example:"user@example.com"`
 	// User's ISO 3166-1 alpha-2 country code
 	CountryCode string `json:"country_code" example:"CM"`
-	// Optional phone number
-	PhoneNumber *string `json:"phone_number" example:"+2371234567890"`
 	// Optional full name
 	FullName *string `json:"full_name" example:"John Doe"`
 }
@@ -69,8 +67,6 @@ type GetUserResponse struct {
 	AccountToken string `json:"account_token" example:"sample_account_token"`
 	// Email address associated with the user's account
 	Email string `json:"email" example:"user@example.com"`
-	// Phone number associated with the user's account
-	PhoneNumber *string `json:"phone_number" example:"+2371234567890"`
 	// Full name of the user
 	FullName *string `json:"full_name" example:"John Doe"`
 	// Message indicating successful retrieval
