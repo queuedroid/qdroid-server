@@ -16,7 +16,7 @@ type User struct {
 	AccountToken         string  `gorm:"size:255;not null;index"`
 	Email                string  `gorm:"size:255;not null;uniqueIndex"`
 	EmailEncrypted       []byte  `gorm:"size:255;not null"`
-	EmailPseudonym       []byte  `gorm:"size:255;not null"`
+	EmailPseudonym       []byte  `gorm:"size:255;not null;uniqueIndex"`
 	Password             string  `gorm:"size:255;not null"`
 	CountryCode          string  `gorm:"size:10;not null"`
 	CountryCodeEncrypted []byte  `gorm:"size:255;not null"`
