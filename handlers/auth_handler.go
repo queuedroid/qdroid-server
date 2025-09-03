@@ -20,7 +20,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func generateSessionToken(c echo.Context, user models.User) (string, error) {
+func generateSessionToken(c echo.Context, user models.User, newCrypto crypto.Crypto) (string, error) {
 	logger := c.Logger()
 
 	sessionToken, err := crypto.GenerateRandomString("st_long_", 32, "hex")
@@ -36,14 +36,42 @@ func generateSessionToken(c echo.Context, user models.User) (string, error) {
 	userAgent := c.Request().Header.Get("User-Agent")
 	ipAddress := c.RealIP()
 
-	if err := db.Conn.Where("user_id = ?", user.ID).Assign(models.Session{
-		UserID:     user.ID,
-		Token:      sessionToken,
-		LastUsedAt: &sessionLastused,
-		ExpiresAt:  &sessionExp,
-		UserAgent:  &userAgent,
-		IPAddress:  &ipAddress,
-	}).FirstOrCreate(&session).Error; err != nil {
+	uaEnc, err := newCrypto.EncryptData([]byte(userAgent), "AES-GCM")
+	if err != nil {
+		logger.Errorf("Failed to encrypt user agent: %v", err)
+		return "", err
+	}
+
+	uaPseudo, err := newCrypto.HashData([]byte(userAgent), "HMAC-SHA-256")
+	if err != nil {
+		logger.Errorf("Failed to hash user agent: %v", err)
+		return "", err
+	}
+
+	ipAddressEnc, err := newCrypto.EncryptData([]byte(ipAddress), "AES-GCM")
+	if err != nil {
+		logger.Errorf("Failed to encrypt IP address: %v", err)
+		return "", err
+	}
+
+	ipAddressPseudo, err := newCrypto.HashData([]byte(ipAddress), "HMAC-SHA-256")
+	if err != nil {
+		logger.Errorf("Failed to hash IP address: %v", err)
+		return "", err
+	}
+
+	if err := db.Conn.Where(
+		"user_id = ? AND ip_address_pseudonym = ? AND user_agent_pseudonym = ?", user.ID, ipAddressPseudo, uaPseudo).
+		Assign(models.Session{
+			UserID:             user.ID,
+			Token:              sessionToken,
+			LastUsedAt:         &sessionLastused,
+			ExpiresAt:          &sessionExp,
+			UserAgentEncrypted: &uaEnc,
+			UserAgentPseudonym: &uaPseudo,
+			IPAddressEncrypted: &ipAddressEnc,
+			IPAddressPseudonym: &ipAddressPseudo,
+		}).FirstOrCreate(&session).Error; err != nil {
 		logger.Errorf("Failed to create session: %v", err)
 		return "", err
 	}
@@ -127,27 +155,7 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
-	if req.PhoneNumber != nil && *req.PhoneNumber != "" {
-		parsedNumber, err := phonenumbers.Parse(*req.PhoneNumber, req.CountryCode)
-		if err != nil {
-			logger.Error("Failed to parse phone number: ", err)
-			return &echo.HTTPError{
-				Code:    http.StatusBadRequest,
-				Message: "phone_number field must be a valid E.164 phone number. Please ensure it starts with a '+' followed by the country code and national number.",
-			}
-		}
-
-		if !phonenumbers.IsValidNumber(parsedNumber) {
-			logger.Error("Invalid phone number.")
-			return &echo.HTTPError{
-				Code:    http.StatusBadRequest,
-				Message: "phone_number field must be a valid E.164 phone number. Please ensure it starts with a '+' followed by the country code and national number.",
-			}
-		}
-	}
-
 	countryCodeNum := phonenumbers.GetCountryCodeForRegion(req.CountryCode)
-	fmt.Println("Country code number:", countryCodeNum)
 	if countryCodeNum == 0 {
 		logger.Error("Invalid country code.")
 		return &echo.HTTPError{
@@ -156,7 +164,15 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
-	count := db.Conn.Where("email = ?", req.Email).First(&models.User{}).RowsAffected
+	newCrypto := crypto.NewCrypto()
+
+	emailPseudo, err := newCrypto.HashData([]byte(req.Email), "HMAC-SHA-256")
+	if err != nil {
+		logger.Errorf("Failed to hash email for pseudonym: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	count := db.Conn.Where("email_pseudonym = ?", emailPseudo).First(&models.User{}).RowsAffected
 	if count > 0 {
 		logger.Errorf("This email is already registered.")
 		return &echo.HTTPError{
@@ -165,7 +181,6 @@ func SignupHandler(c echo.Context) error {
 		}
 	}
 
-	newCrypto := crypto.NewCrypto()
 	hash, err := newCrypto.HashPassword(req.Password)
 	if err != nil {
 		logger.Errorf("Failed to hash password: %v", err)
@@ -184,14 +199,41 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	emailEncrypted, err := newCrypto.EncryptData([]byte(req.Email), "AES-GCM")
+	if err != nil {
+		logger.Errorf("Failed to encrypt email: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	countryCodeEncrypted, err := newCrypto.EncryptData([]byte(req.CountryCode), "AES-GCM")
+	if err != nil {
+		logger.Errorf("Failed to encrypt country code: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	var fullNameEncrypted []byte
+	if req.FullName != nil && *req.FullName != "" {
+		var err error
+		fullNameEncrypted, err = newCrypto.EncryptData([]byte(*req.FullName), "AES-GCM")
+		if err != nil {
+			logger.Errorf("Failed to encrypt full name: %v", err)
+			return echo.ErrInternalServerError
+		}
+	}
+
 	user := models.User{
-		AccountID:    aid,
-		AccountToken: att,
-		Email:        req.Email,
-		Password:     hash,
-		PhoneNumber:  req.PhoneNumber,
-		FullName:     req.FullName,
-		CountryCode:  req.CountryCode,
+		AccountID:            aid,
+		AccountToken:         att,
+		EmailEncrypted:       emailEncrypted,
+		EmailPseudonym:       emailPseudo,
+		Password:             hash,
+		FullNameEncrypted:    &fullNameEncrypted,
+		CountryCodeEncrypted: countryCodeEncrypted,
+	}
+
+	stat := models.Stats{
+		Type:        models.StatsTypeSignup,
+		CountryCode: &req.CountryCode,
 	}
 
 	tx := db.Conn.Begin()
@@ -203,6 +245,12 @@ func SignupHandler(c echo.Context) error {
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to create user: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Create(&stat).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to create stats: %v", err)
 		return echo.ErrInternalServerError
 	}
 
@@ -232,7 +280,7 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	sessionToken, err := generateSessionToken(c, user)
+	sessionToken, err := generateSessionToken(c, user, *newCrypto)
 	if err != nil {
 		logger.Errorf("Failed to generate session token after signup: %v", err)
 		return echo.ErrInternalServerError
@@ -284,9 +332,14 @@ func LoginHandler(c echo.Context) error {
 
 	newCrypto := crypto.NewCrypto()
 	user := models.User{}
-	err := db.Conn.Where("email = ?", req.Email).First(&user).Error
 
+	emailPseudo, err := newCrypto.HashData([]byte(req.Email), "HMAC-SHA-256")
 	if err != nil {
+		logger.Errorf("Failed to hash email: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := db.Conn.Where("email_pseudonym = ?", emailPseudo).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("User not found.")
 			return &echo.HTTPError{
@@ -307,7 +360,7 @@ func LoginHandler(c echo.Context) error {
 		}
 	}
 
-	sessionToken, err := generateSessionToken(c, user)
+	sessionToken, err := generateSessionToken(c, user, *newCrypto)
 	if err != nil {
 		logger.Errorf("Failed to generate session token after login: %v", err)
 		return echo.ErrInternalServerError
