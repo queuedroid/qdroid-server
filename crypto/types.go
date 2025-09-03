@@ -8,6 +8,6 @@ type Crypto struct {
 	ArgonThreads  uint8
 	ArgonKeyLen   uint32
 	ArgonSaltLen  uint32
-	EncryptionKey string
-	HashingPepper string
+	EncryptionKey []byte
+	HashingPepper []byte
 }

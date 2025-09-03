@@ -25,8 +25,8 @@ func NewCrypto() *Crypto {
 		argonThreads  uint8
 		argonKeyLen   uint32
 		argonSaltLen  uint32
-		encryptionKey string
-		hashingPepper string
+		encryptionKey []byte
+		hashingPepper []byte
 	)
 	if v := commons.GetEnv("ARGON2_TIME", "1"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
@@ -54,13 +54,23 @@ func NewCrypto() *Crypto {
 		}
 	}
 
-	encryptionKey = commons.GetEnv("ENCRYPTION_KEY", "")
-	if encryptionKey == "" {
+	encryptionKeyHex := commons.GetEnv("ENCRYPTION_KEY", "")
+	if encryptionKeyHex == "" {
 		panic("ENCRYPTION_KEY environment variable must be set for secure operation")
 	}
-	hashingPepper = commons.GetEnv("HASHING_PEPPER", "")
-	if hashingPepper == "" {
+	var err error
+	encryptionKey, err = hex.DecodeString(encryptionKeyHex)
+	if err != nil {
+		panic(fmt.Sprintf("ENCRYPTION_KEY must be a valid hex string: %v", err))
+	}
+
+	hashingPepperHex := commons.GetEnv("HASHING_PEPPER", "")
+	if hashingPepperHex == "" {
 		panic("HASHING_PEPPER environment variable must be set for secure operation")
+	}
+	hashingPepper, err = hex.DecodeString(hashingPepperHex)
+	if err != nil {
+		panic(fmt.Sprintf("HASHING_PEPPER must be a valid hex string: %v", err))
 	}
 
 	return &Crypto{
@@ -126,7 +136,7 @@ func (c *Crypto) EncryptData(data []byte, algo string) ([]byte, error) {
 
 	switch algo {
 	case "AES-GCM":
-		return c.encryptAESGCM(data, []byte(c.EncryptionKey))
+		return c.encryptAESGCM(data, c.EncryptionKey)
 	default:
 		return nil, fmt.Errorf("unsupported encryption algorithm: %s", algo)
 	}
@@ -137,7 +147,7 @@ func (c *Crypto) DecryptData(encryptedData []byte, algo string) ([]byte, error) 
 
 	switch algo {
 	case "AES-GCM":
-		return c.decryptAESGCM(encryptedData, []byte(c.EncryptionKey))
+		return c.decryptAESGCM(encryptedData, c.EncryptionKey)
 	default:
 		return nil, fmt.Errorf("unsupported decryption algorithm: %s", algo)
 	}
@@ -148,7 +158,7 @@ func (c *Crypto) HashData(data []byte, algo string) ([]byte, error) {
 
 	switch algo {
 	case "HMAC-SHA-256":
-		return c.hmacSHA256(data, []byte(c.HashingPepper)), nil
+		return c.hmacSHA256(data, c.HashingPepper), nil
 	default:
 		return nil, fmt.Errorf("unsupported hashing algorithm: %s", algo)
 	}
@@ -159,7 +169,7 @@ func (c *Crypto) VerifyHash(data []byte, expectedHash []byte, algo string) (bool
 
 	switch algo {
 	case "HMAC-SHA-256":
-		computedHash := c.hmacSHA256(data, []byte(c.HashingPepper))
+		computedHash := c.hmacSHA256(data, c.HashingPepper)
 		return hmac.Equal(expectedHash, computedHash), nil
 	default:
 		return false, fmt.Errorf("unsupported hashing algorithm: %s", algo)
