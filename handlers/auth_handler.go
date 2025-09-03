@@ -60,16 +60,18 @@ func generateSessionToken(c echo.Context, user models.User, newCrypto crypto.Cry
 		return "", err
 	}
 
-	if err := db.Conn.Where("user_id = ?", user.ID).Assign(models.Session{
-		UserID:             user.ID,
-		Token:              sessionToken,
-		LastUsedAt:         &sessionLastused,
-		ExpiresAt:          &sessionExp,
-		UserAgentEncrypted: &uaEnc,
-		UserAgentPseudonym: &uaPseudo,
-		IPAddressEncrypted: &ipAddressEnc,
-		IPAddressPseudonym: &ipAddressPseudo,
-	}).FirstOrCreate(&session).Error; err != nil {
+	if err := db.Conn.Where(
+		"user_id = ? AND ip_address_pseudonym = ? AND user_agent_pseudonym = ?", user.ID, ipAddressPseudo, uaPseudo).
+		Assign(models.Session{
+			UserID:             user.ID,
+			Token:              sessionToken,
+			LastUsedAt:         &sessionLastused,
+			ExpiresAt:          &sessionExp,
+			UserAgentEncrypted: &uaEnc,
+			UserAgentPseudonym: &uaPseudo,
+			IPAddressEncrypted: &ipAddressEnc,
+			IPAddressPseudonym: &ipAddressPseudo,
+		}).FirstOrCreate(&session).Error; err != nil {
 		logger.Errorf("Failed to create session: %v", err)
 		return "", err
 	}
