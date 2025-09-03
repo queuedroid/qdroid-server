@@ -119,5 +119,30 @@ func List() []*gormigrate.Migration {
 			},
 			Rollback: func(tx *gorm.DB) error { return nil },
 		},
+		{
+			ID: "003_create_stats",
+			Migrate: func(tx *gorm.DB) error {
+				var users []models.User
+
+				if err := tx.Select("country_code, created_at").
+					Find(&users).Error; err != nil {
+					return fmt.Errorf("failed to fetch users for stats: %w", err)
+				}
+
+				for _, user := range users {
+					stat := models.Stats{
+						Type:        models.StatsTypeSignup,
+						CountryCode: &user.CountryCode,
+						CreatedAt:   user.CreatedAt,
+					}
+					if err := tx.Create(&stat).Error; err != nil {
+						return fmt.Errorf("failed to create stat: %w", err)
+					}
+				}
+
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error { return nil },
+		},
 	}
 }
