@@ -26,6 +26,8 @@ services:
       - ARGON2_THREADS
       - ARGON2_KEYLEN
       - ARGON2_SALTLEN
+      - ENCRYPTION_KEY
+      - HASHING_PEPPER
     depends_on:
       mariadb:
         condition: service_healthy
