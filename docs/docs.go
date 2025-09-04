@@ -2085,11 +2085,6 @@ const docTemplate = `{
                     "description": "Message indicating successful retrieval",
                     "type": "string",
                     "example": "User retrieved successfully"
-                },
-                "phone_number": {
-                    "description": "Phone number associated with the user's account",
-                    "type": "string",
-                    "example": "+2371234567890"
                 }
             }
         },
@@ -2277,11 +2272,6 @@ const docTemplate = `{
                     "description": "User's password\nrequired: true",
                     "type": "string",
                     "example": "MySecretPassword@123"
-                },
-                "phone_number": {
-                    "description": "Optional phone number",
-                    "type": "string",
-                    "example": "+2371234567890"
                 }
             }
         },

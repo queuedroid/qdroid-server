@@ -403,10 +403,6 @@ definitions:
         description: Message indicating successful retrieval
         example: User retrieved successfully
         type: string
-      phone_number:
-        description: Phone number associated with the user's account
-        example: "+2371234567890"
-        type: string
     type: object
   handlers.LoginRequest:
     properties:
@@ -558,10 +554,6 @@ definitions:
           User's password
           required: true
         example: MySecretPassword@123
-        type: string
-      phone_number:
-        description: Optional phone number
-        example: "+2371234567890"
         type: string
     type: object
   handlers.UpdateExchangeRequest:

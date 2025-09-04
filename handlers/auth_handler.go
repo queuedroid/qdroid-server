@@ -10,6 +10,7 @@ import (
 	"qdroid-server/crypto"
 	"qdroid-server/db"
 	"qdroid-server/models"
+	"qdroid-server/notifications"
 	"qdroid-server/passwordcheck"
 	"qdroid-server/rabbitmq"
 	"time"
@@ -285,6 +286,23 @@ func SignupHandler(c echo.Context) error {
 		logger.Errorf("Failed to generate session token after signup: %v", err)
 		return echo.ErrInternalServerError
 	}
+
+	vars := map[string]any{
+		"username":            req.Email,
+		"product_name":        "Queuedroid",
+		"verify_account_link": "https://queuedroid.com/dashboard",
+	}
+
+	if req.FullName != nil && *req.FullName != "" {
+		vars["name"] = *req.FullName
+	}
+
+	go notifications.DispatchNotification(notifications.Email, notifications.ZeptoMail, notifications.NotificationData{
+		To:        req.Email,
+		ToName:    req.FullName,
+		Template:  "queuedroid-welcome",
+		Variables: vars,
+	})
 
 	logger.Infof("User signed up successfully")
 	return c.JSON(http.StatusCreated, AuthResponse{

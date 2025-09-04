@@ -19,6 +19,7 @@ type User struct {
 	Password             string  `gorm:"size:255;not null"`
 	CountryCodeEncrypted []byte  `gorm:"size:255;not null"`
 	FullNameEncrypted    *[]byte `gorm:"size:255;default:null"`
+	IsEmailVerified      bool    `gorm:"not null;default:false"`
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	DeletedAt            gorm.DeletedAt `gorm:"index"`
