@@ -11,6 +11,7 @@ const (
 type NotificationData struct {
 	To        string         `json:"to"`
 	ToName    *string        `json:"to_name,omitempty"`
+	Subject   string         `json:"subject"`
 	Template  string         `json:"template"`
 	Variables map[string]any `json:"variables,omitempty"`
 }
@@ -18,8 +19,8 @@ type NotificationData struct {
 type NotificationProviders string
 
 const (
-	ZeptoMail NotificationProviders = "zepto_mail"
-	Mock      NotificationProviders = "mock"
+	SMTP NotificationProviders = "smtp"
+	Mock NotificationProviders = "mock"
 )
 
 type ZeptoMailRequest struct {

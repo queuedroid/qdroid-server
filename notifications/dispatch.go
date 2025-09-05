@@ -34,8 +34,8 @@ func DispatchNotification(_type NotificationTypes, provider NotificationProvider
 
 func dispatchEmail(provider NotificationProviders, data NotificationData) error {
 	switch provider {
-	case ZeptoMail:
-		return ZeptoMailClient(data)
+	case SMTP:
+		return SMTPClient(data)
 	case Mock:
 		return MockEmailClient(data)
 	default:

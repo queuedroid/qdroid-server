@@ -69,6 +69,8 @@ type GetUserResponse struct {
 	Email string `json:"email" example:"user@example.com"`
 	// Full name of the user
 	FullName *string `json:"full_name" example:"John Doe"`
+	// Whether the user's email is verified
+	IsEmailVerified bool `json:"is_email_verified" example:"true"`
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"User retrieved successfully"`
 }
@@ -367,4 +369,11 @@ type ChangePasswordRequest struct {
 	// New password
 	// required: true
 	NewPassword string `json:"new_password" example:"MyNewPassword@456"`
+}
+
+// swagger:model VerifyEmailRequest
+type VerifyEmailRequest struct {
+	// Email verification token
+	// required: true
+	Token string `json:"token" example:"evt_a1b2c3d4e5f6789"`
 }

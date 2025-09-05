@@ -4,116 +4,16 @@ package notifications
 
 import (
 	"bytes"
-	"encoding/json"
+	"crypto/tls"
 	"fmt"
-	"net/http"
+	"html/template"
+	"os"
+	"path/filepath"
 	"qdroid-server/commons"
-	"time"
+	"strconv"
+
+	"gopkg.in/gomail.v2"
 )
-
-func ZeptoMailClient(data NotificationData) error {
-	commons.Logger.Debug("Sending email via ZeptoMail")
-
-	apiKey := commons.GetEnv("ZEPTO_MAIL_API_KEY")
-	if apiKey == "" {
-		return fmt.Errorf("ZEPTO_MAIL_API_KEY environment variable is not set")
-	}
-
-	baseURL := commons.GetEnv("ZEPTO_MAIL_BASE_URL")
-	if baseURL == "" {
-		return fmt.Errorf("ZEPTO_MAIL_BASE_URL environment variable is not set")
-	}
-
-	fromEmail := commons.GetEnv("ZEPTO_MAIL_FROM_EMAIL")
-	if fromEmail == "" {
-		return fmt.Errorf("ZEPTO_MAIL_FROM_EMAIL environment variable is not set")
-	}
-	fromName := commons.GetEnv("ZEPTO_MAIL_FROM_NAME")
-	if fromName == "" {
-		return fmt.Errorf("ZEPTO_MAIL_FROM_NAME environment variable is not set")
-	}
-
-	to := data.To
-	if to == "" {
-		return fmt.Errorf("'to' field is required")
-	}
-	toName := data.ToName
-	templateAlias := data.Template
-	if templateAlias == "" {
-		return fmt.Errorf("'template' field is required")
-	}
-
-	emailRequest := ZeptoMailRequest{
-		From: ZeptoMailAddress{
-			Address: fromEmail,
-			Name:    &fromName,
-		},
-		To: []ZeptoMailRecipient{
-			{
-				EmailAddress: ZeptoMailAddress{
-					Address: to,
-					Name:    toName,
-				},
-			},
-		},
-		TemplateAlias: templateAlias,
-		MergeInfo:     data.Variables,
-	}
-
-	jsonData, err := json.Marshal(emailRequest)
-	if err != nil {
-		commons.Logger.Error("Failed to marshal email request:", err)
-		return fmt.Errorf("failed to marshal email request: %w", err)
-	}
-
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-
-	req, err := http.NewRequest("POST", baseURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		commons.Logger.Error("Failed to create HTTP request:", err)
-		return fmt.Errorf("failed to create HTTP request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Zoho-enczapikey "+apiKey)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		commons.Logger.Error("Failed to send email request:", err)
-		return fmt.Errorf("failed to send email request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var zeptoResponse ZeptoMailResponse
-	if err := json.NewDecoder(resp.Body).Decode(&zeptoResponse); err != nil {
-		commons.Logger.Error("Failed to decode response:", err)
-		return fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	if zeptoResponse.Error != nil {
-		commons.Logger.Errorf("ZeptoMail API returned error: %s", zeptoResponse.Error.Message)
-		return fmt.Errorf("- status: %d\n- message: %s\n- details: %v",
-			resp.StatusCode,
-			zeptoResponse.Error.Message,
-			zeptoResponse.Error.Details,
-		)
-	}
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		commons.Logger.Error("ZeptoMail API returned error:", zeptoResponse.Message)
-		return fmt.Errorf("ZeptoMail API error:\n- status: %d\n- message: %s", resp.StatusCode, zeptoResponse.Message)
-	}
-
-	if len(zeptoResponse.Data) > 0 {
-		commons.Logger.Infof("ZeptoMail response data: %v", zeptoResponse.Data)
-	}
-
-	commons.Logger.Info("Email sent successfully via ZeptoMail")
-	return nil
-}
 
 func MockEmailClient(data NotificationData) error {
 	commons.Logger.Info("=== MOCK EMAIL NOTIFICATION ===")
@@ -121,6 +21,7 @@ func MockEmailClient(data NotificationData) error {
 	if data.ToName != nil {
 		commons.Logger.Infof("To Name: %s", *data.ToName)
 	}
+	commons.Logger.Infof("Subject: %s", data.Subject)
 	commons.Logger.Infof("Template: %s", data.Template)
 
 	if len(data.Variables) > 0 {
@@ -130,6 +31,120 @@ func MockEmailClient(data NotificationData) error {
 		}
 	}
 
+	if data.Template != "" {
+		htmlBody, err := loadAndRenderTemplate(data.Template, data.Variables)
+		if err != nil {
+			commons.Logger.Errorf("Failed to render template: %v", err)
+			return fmt.Errorf("failed to render template: %w", err)
+		}
+
+		commons.Logger.Info("=== RENDERED EMAIL CONTENT ===")
+		fmt.Println(htmlBody)
+		commons.Logger.Info("=== END EMAIL CONTENT ===")
+	}
+
 	commons.Logger.Info("=== EMAIL MOCK COMPLETE ===")
 	return nil
+}
+
+func SMTPClient(data NotificationData) error {
+	commons.Logger.Debug("Sending email via SMTP")
+
+	smtpHost := commons.GetEnv("SMTP_HOST")
+	if smtpHost == "" {
+		return fmt.Errorf("SMTP_HOST environment variable is not set")
+	}
+
+	smtpPort := commons.GetEnv("SMTP_PORT")
+	if smtpPort == "" {
+		return fmt.Errorf("SMTP_PORT environment variable is not set")
+	}
+
+	username := commons.GetEnv("SMTP_USERNAME")
+	if username == "" {
+		return fmt.Errorf("SMTP_USERNAME environment variable is not set")
+	}
+
+	password := commons.GetEnv("SMTP_PASSWORD")
+	if password == "" {
+		return fmt.Errorf("SMTP_PASSWORD environment variable is not set")
+	}
+
+	fromEmail := commons.GetEnv("SMTP_FROM_EMAIL")
+	if fromEmail == "" {
+		return fmt.Errorf("SMTP_FROM_EMAIL environment variable is not set")
+	}
+
+	fromName := commons.GetEnv("SMTP_FROM_NAME")
+	if fromName == "" {
+		fromName = "QueueDroid"
+	}
+
+	if data.To == "" {
+		return fmt.Errorf("'to' field is required")
+	}
+
+	if data.Subject == "" {
+		return fmt.Errorf("'subject' field is required")
+	}
+
+	if data.Template == "" {
+		return fmt.Errorf("'template' field is required")
+	}
+
+	htmlBody, err := loadAndRenderTemplate(data.Template, data.Variables)
+	if err != nil {
+		return fmt.Errorf("failed to load template: %w", err)
+	}
+
+	port, err := strconv.Atoi(smtpPort)
+	if err != nil {
+		return fmt.Errorf("invalid SMTP port: %s", smtpPort)
+	}
+
+	message := gomail.NewMessage()
+	message.SetHeader("From", message.FormatAddress(fromEmail, fromName))
+	message.SetHeader("To", message.FormatAddress(data.To, *data.ToName))
+	message.SetHeader("Subject", data.Subject)
+	message.SetBody("text/html", htmlBody)
+
+	dialer := gomail.NewDialer(smtpHost, port, username, password)
+	dialer.TLSConfig = &tls.Config{
+		ServerName:         smtpHost,
+		InsecureSkipVerify: false,
+	}
+
+	if err := dialer.DialAndSend(message); err != nil {
+		commons.Logger.Error("Failed to send email via SMTP:", err)
+		return fmt.Errorf("failed to send email via SMTP: %w", err)
+	}
+
+	commons.Logger.Info("Email sent successfully via SMTP")
+	return nil
+}
+
+func loadAndRenderTemplate(templateName string, variables map[string]any) (string, error) {
+	templatePath := filepath.Join("email_templates", templateName+".html")
+
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		commons.Logger.Warnf("Template file not found: %s.", templatePath)
+		return "", fmt.Errorf("template file not found: %s", templatePath)
+	}
+
+	templateContent, err := os.ReadFile(templatePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read template file %s: %w", templatePath, err)
+	}
+
+	tmpl, err := template.New(templateName).Parse(string(templateContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template %s: %w", templateName, err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, variables); err != nil {
+		return "", fmt.Errorf("failed to execute template %s: %w", templateName, err)
+	}
+
+	return buf.String(), nil
 }

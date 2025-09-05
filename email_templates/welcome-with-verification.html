@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to QueueDroid - Verify Your Email</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #e8f4fd 0%, #f4f4f4 100%);
+        padding: 20px;
+        text-align: center;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .welcome-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+      .content {
+        padding: 20px 0;
+      }
+      .welcome-section {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border-left: 4px solid #28a745;
+      }
+      .verification-section {
+        background-color: #fff3cd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        border-left: 4px solid #ffc107;
+      }
+      .verify-button {
+        display: inline-block;
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 15px 0;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      .verify-button:hover {
+        background-color: #0056b3;
+      }
+      .features-list {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .features-list ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .features-list li {
+        margin-bottom: 8px;
+      }
+      .important-note {
+        background-color: #d1ecf1;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #bee5eb;
+        margin: 20px 0;
+      }
+      .footer {
+        background-color: #f4f4f4;
+        padding: 15px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        border-radius: 5px;
+        margin-top: 30px;
+      }
+      .link-fallback {
+        word-break: break-all;
+        color: #007bff;
+        font-size: 14px;
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="welcome-icon">🎉</div>
+      <h1>Welcome to QueueDroid!</h1>
+      <p style="margin: 0; color: #666">One more step to get started</p>
+    </div>
+
+    <div class="content">
+      <div class="welcome-section">
+        <h2 style="margin-top: 0; color: #28a745">
+          Hello{{if .name}} {{.name}},{{else}}!{{end}}
+        </h2>
+        <p>
+          We're thrilled to welcome you to QueueDroid! Thank you for joining our
+          platform. You're now part of a community that values efficient queue
+          management and seamless communication.
+        </p>
+      </div>
+
+      <div class="verification-section">
+        <h3 style="margin-top: 0; color: #856404">
+          📧 Please Verify Your Email Address
+        </h3>
+        <p>
+          To complete your registration and ensure the security of your account,
+          please verify your email address by clicking the button below:
+        </p>
+
+        <p style="text-align: center">
+          <a href="{{.verification_link}}" class="verify-button"
+            >✅ Verify Email Address</a
+          >
+        </p>
+
+        <p>
+          <strong>Can't see the button?</strong> Copy and paste this link into
+          your browser:
+        </p>
+        <div class="link-fallback">{{.verification_link}}</div>
+      </div>
+
+      <div class="features-list">
+        <h3 style="margin-top: 0">🚀 What you can do with QueueDroid:</h3>
+        <ul>
+          <li>Manage queues efficiently and effectively</li>
+          <li>Send and receive messages seamlessly</li>
+          <li>Monitor real-time analytics and statistics</li>
+          <li>Integrate with your existing workflows</li>
+          <li>Access powerful API features</li>
+        </ul>
+      </div>
+
+      <div class="important-note">
+        <h4 style="margin-top: 0">⏰ Important Information:</h4>
+        <ul style="margin-bottom: 0">
+          <li>
+            This verification link will expire in <strong>24 hours</strong> for
+            security reasons
+          </li>
+          <li>
+            Once verified, you'll have full access to all QueueDroid features
+          </li>
+          <li>If you didn't create this account, please ignore this email</li>
+          <li>Need help? Contact our support team</li>
+        </ul>
+      </div>
+
+      <p>We're excited to see what you'll build with QueueDroid!</p>
+      <p>Best regards,<br />The QueueDroid Team</p>
+    </div>
+
+    <div class="footer">
+      <p>&copy; 2025 QueueDroid. All rights reserved.</p>
+      <p>
+        This email was sent to {{.email}} because you created a QueueDroid
+        account.
+      </p>
+    </div>
+  </body>
+</html>

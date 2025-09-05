@@ -58,11 +58,12 @@ func GetUserHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, GetUserResponse{
-		Message:      "User retrieved successfully",
-		AccountID:    user.AccountID,
-		AccountToken: user.AccountToken,
-		Email:        string(decryptedEmail),
-		FullName:     fullName,
+		Message:         "User retrieved successfully",
+		AccountID:       user.AccountID,
+		AccountToken:    user.AccountToken,
+		Email:           string(decryptedEmail),
+		FullName:        fullName,
+		IsEmailVerified: user.IsEmailVerified,
 	})
 }
 

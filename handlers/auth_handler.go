@@ -281,26 +281,47 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	verificationToken, err := crypto.GenerateRandomString("evt_", 32, "hex")
+	if err != nil {
+		logger.Errorf("Failed to generate verification token: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	verificationExpiresAt := time.Now().Add(24 * time.Hour)
+	verification := models.EmailVerification{
+		UserID:    user.ID,
+		Token:     verificationToken,
+		ExpiresAt: verificationExpiresAt,
+		IsUsed:    false,
+	}
+
+	if err := db.Conn.Create(&verification).Error; err != nil {
+		logger.Errorf("Failed to create verification record: %v", err)
+	}
+
 	sessionToken, err := generateSessionToken(c, user, *newCrypto)
 	if err != nil {
 		logger.Errorf("Failed to generate session token after signup: %v", err)
 		return echo.ErrInternalServerError
 	}
 
+	verifyLink := commons.GetEnv("EMAIL_VERIFICATION_URL", "https://queuedroid.com") + "/verify-email?token=" + verificationToken
 	vars := map[string]any{
-		"username":            req.Email,
-		"product_name":        "Queuedroid",
-		"verify_account_link": "https://queuedroid.com/dashboard",
+		"username":          req.Email,
+		"product_name":      "Queuedroid",
+		"verification_link": verifyLink,
+		"expiration_hours":  "24",
 	}
 
 	if req.FullName != nil && *req.FullName != "" {
 		vars["name"] = *req.FullName
 	}
 
-	go notifications.DispatchNotification(notifications.Email, notifications.ZeptoMail, notifications.NotificationData{
+	go notifications.DispatchNotification(notifications.Email, notifications.SMTP, notifications.NotificationData{
 		To:        req.Email,
 		ToName:    req.FullName,
-		Template:  "queuedroid-welcome",
+		Subject:   "Welcome to Queuedroid!",
+		Template:  "welcome-with-verification",
 		Variables: vars,
 	})
 

@@ -399,6 +399,10 @@ definitions:
         description: Full name of the user
         example: John Doe
         type: string
+      is_email_verified:
+        description: Whether the user's email is verified
+        example: true
+        type: boolean
       message:
         description: Message indicating successful retrieval
         example: User retrieved successfully
@@ -565,6 +569,15 @@ definitions:
       label:
         description: New label for the exchange
         example: New OTP Messages
+        type: string
+    type: object
+  handlers.VerifyEmailRequest:
+    properties:
+      token:
+        description: |-
+          Email verification token
+          required: true
+        example: evt_a1b2c3d4e5f6789
         type: string
     type: object
 info:
@@ -754,6 +767,88 @@ paths:
       summary: Logout a user
       tags:
       - auth
+  /v1/auth/resend-verification-email:
+    post:
+      description: Resends verification email (rate limited)
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email resent successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "409":
+          description: Email already verified
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "429":
+          description: Too many requests
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Resend verification email
+      tags:
+      - auth
+  /v1/auth/send-verification-email:
+    post:
+      description: Sends a verification email to the user's registered email address
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email sent successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "409":
+          description: Email already verified
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Send verification email
+      tags:
+      - auth
   /v1/auth/signup:
     post:
       consumes:
@@ -786,6 +881,40 @@ paths:
           schema:
             $ref: '#/definitions/echo.HTTPError'
       summary: Register a new user
+      tags:
+      - auth
+  /v1/auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the user's email address using the token sent via email
+      parameters:
+      - description: Email verification request
+        in: body
+        name: verifyEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request or invalid token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "410":
+          description: Token expired
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      summary: Verify email address
       tags:
       - auth
   /v1/event-logs:
