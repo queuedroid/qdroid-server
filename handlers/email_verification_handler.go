@@ -61,6 +61,7 @@ func SendVerificationEmailHandler(c echo.Context) error {
 	emailVerification := models.EmailVerification{}
 	if err := db.Conn.Where("user_id = ? AND is_used = ?", user.ID, false).
 		Assign(models.EmailVerification{
+			UserID:    user.ID,
 			Token:     token,
 			ExpiresAt: expiresAt,
 		}).FirstOrCreate(&emailVerification).Error; err != nil {
