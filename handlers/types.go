@@ -71,6 +71,8 @@ type GetUserResponse struct {
 	FullName *string `json:"full_name" example:"John Doe"`
 	// Whether the user's email is verified
 	IsEmailVerified bool `json:"is_email_verified" example:"true"`
+	// User's subscription plan
+	Subscription string `json:"subscription" example:"FREE"`
 	// Message indicating successful retrieval
 	Message string `json:"message" example:"User retrieved successfully"`
 }

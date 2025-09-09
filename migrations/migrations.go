@@ -168,5 +168,63 @@ func List() []*gormigrate.Migration {
 			},
 			Rollback: func(tx *gorm.DB) error { return nil },
 		},
+		{
+			ID: "005_add_free_plus_plans",
+			Migrate: func(tx *gorm.DB) error {
+				freePlanMaxProjects := uint(1)
+				freePlanMaxMessagesPerMonth := uint(100)
+				plusDurationInDays := uint(30)
+				plans := []models.Plan{
+					{
+						MaxProjects:         &freePlanMaxProjects,
+						MaxMessagesPerMonth: &freePlanMaxMessagesPerMonth,
+					},
+					{
+						Name:           models.PlusPlan,
+						Price:          20,
+						Currency:       "USD",
+						DurationInDays: &plusDurationInDays,
+					},
+				}
+
+				for _, plan := range plans {
+					if err := tx.Create(&plan).Error; err != nil {
+						return fmt.Errorf("failed to create plan %s: %w", plan.Name, err)
+					}
+				}
+
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error { return nil },
+		},
+		{
+			ID: "006_subscribe_existing_users_to_free_plan",
+			Migrate: func(tx *gorm.DB) error {
+				var users []models.User
+				if err := tx.Find(&users).Error; err != nil {
+					return fmt.Errorf("failed to fetch users: %w", err)
+				}
+
+				var freePlan models.Plan
+				if err := tx.Where("name = ?", models.FreePlan).First(&freePlan).Error; err != nil {
+					return fmt.Errorf("failed to fetch free plan: %w", err)
+				}
+
+				var subscription models.Subscription
+				for _, user := range users {
+					if err := tx.Where("user_id = ? AND status = ?", user.ID, models.ActiveSubscription).
+						Assign(models.Subscription{
+							UserID:    user.ID,
+							PlanID:    freePlan.ID,
+							Status:    models.ActiveSubscription,
+							StartedAt: user.CreatedAt,
+						}).FirstOrCreate(&subscription).Error; err != nil {
+						return fmt.Errorf("failed to create subscription for user %d: %w", user.ID, err)
+					}
+				}
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error { return nil },
+		},
 	}
 }

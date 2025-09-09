@@ -546,3 +546,60 @@ func (c *Client) DeleteQueue(vhost, queue string) error {
 	commons.Logger.Infof("RabbitMQ queue deleted: %s in vhost: %s", queue, vhost)
 	return nil
 }
+
+func (c *Client) SetUserLimit(username string, maxConnections, maxChannels int) error {
+	commons.Logger.Debugf("Setting connection limit for user: %s", username)
+	connRel := &url.URL{Path: fmt.Sprintf("/api/user-limits/%s/max-connections", url.PathEscape(username))}
+	chRel := &url.URL{Path: fmt.Sprintf("/api/user-limits/%s/max-channels", url.PathEscape(username))}
+	connURL := c.HTTPURL.ResolveReference(connRel)
+	chURL := c.HTTPURL.ResolveReference(chRel)
+
+	connBody := map[string]int{"value": maxConnections}
+	chBody := map[string]int{"value": maxChannels}
+
+	connJSON, err := json.Marshal(connBody)
+	if err != nil {
+		return err
+	}
+	chJSON, err := json.Marshal(chBody)
+	if err != nil {
+		return err
+	}
+
+	connReq, err := http.NewRequest("PUT", connURL.String(), bytes.NewReader(connJSON))
+	if err != nil {
+		return err
+	}
+	connReq.Header.Set("Content-Type", "application/json")
+	connReq.SetBasicAuth(c.Username, c.Password)
+
+	chReq, err := http.NewRequest("PUT", chURL.String(), bytes.NewReader(chJSON))
+	if err != nil {
+		return err
+	}
+	chReq.Header.Set("Content-Type", "application/json")
+	chReq.SetBasicAuth(c.Username, c.Password)
+
+	connResp, err := c.HTTPClient.Do(connReq)
+	if err != nil {
+		return err
+	}
+	defer connResp.Body.Close()
+	if connResp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to set max connections for user %s: %s", username, connResp.Status)
+		return fmt.Errorf("failed to set max connections: %s", connResp.Status)
+	}
+
+	chResp, err := c.HTTPClient.Do(chReq)
+	if err != nil {
+		return err
+	}
+	defer chResp.Body.Close()
+	if chResp.StatusCode != http.StatusNoContent {
+		commons.Logger.Errorf("Failed to set max channels for user %s: %s", username, chResp.Status)
+		return fmt.Errorf("failed to set max channels: %s", chResp.Status)
+	}
+
+	commons.Logger.Infof("Set connection limits for user: %s (max connections: %d, max channels: %d)", username, maxConnections, maxChannels)
+	return nil
+}

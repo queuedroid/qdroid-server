@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"qdroid-server/crypto"
 	"qdroid-server/db"
@@ -12,6 +13,7 @@ import (
 	"qdroid-server/rabbitmq"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 // GetUserHandler godoc
@@ -57,6 +59,16 @@ func GetUserHandler(c echo.Context) error {
 		fullName = &fullNameStr
 	}
 
+	subscription := models.Subscription{}
+	if err := db.Conn.Preload("Plan").Where("user_id = ?", user.ID).First(&subscription).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Warnf("No subscription found for user.")
+		} else {
+			logger.Errorf("Failed to fetch user subscription: %v", err)
+			return echo.ErrInternalServerError
+		}
+	}
+
 	return c.JSON(http.StatusOK, GetUserResponse{
 		Message:         "User retrieved successfully",
 		AccountID:       user.AccountID,
@@ -64,6 +76,7 @@ func GetUserHandler(c echo.Context) error {
 		Email:           string(decryptedEmail),
 		FullName:        fullName,
 		IsEmailVerified: user.IsEmailVerified,
+		Subscription:    string(subscription.Plan.Name),
 	})
 }
 

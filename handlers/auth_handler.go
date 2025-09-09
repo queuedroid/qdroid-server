@@ -237,6 +237,13 @@ func SignupHandler(c echo.Context) error {
 		CountryCode: &req.CountryCode,
 	}
 
+	plan := models.Plan{}
+
+	if err := db.Conn.Where("name = ?", models.FreePlan).First(&plan).Error; err != nil {
+		logger.Errorf("Failed to find free plan: %v", err)
+		return echo.ErrInternalServerError
+	}
+
 	tx := db.Conn.Begin()
 	if tx.Error != nil {
 		logger.Errorf("Transaction begin failed: %v", tx.Error)
@@ -255,24 +262,45 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	subscription := models.Subscription{
+		Status:    models.ActiveSubscription,
+		StartedAt: time.Now(),
+		UserID:    user.ID,
+		PlanID:    plan.ID,
+	}
+
+	if err := tx.Create(&subscription).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to create subscription: %v", err)
+		return echo.ErrInternalServerError
+	}
+
 	if err := rmqClient.CreateVhost(user.AccountID); err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to create RabbitMQ vhost: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	if err := rmqClient.CreateUser(user.AccountID, user.AccountToken, []string{"management"}); err != nil {
+	if err := rmqClient.CreateUser(user.AccountID, user.AccountToken, []string{}); err != nil {
 		rmqClient.DeleteVhost(user.AccountID)
 		tx.Rollback()
 		logger.Errorf("Failed to create RabbitMQ user: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	if err := rmqClient.SetPermissions(user.AccountID, user.AccountID, ".*", ".*", ".*"); err != nil {
+	if err := rmqClient.SetPermissions(user.AccountID, user.AccountID, ".*", "", ".*"); err != nil {
 		rmqClient.DeleteUser(user.AccountID)
 		rmqClient.DeleteVhost(user.AccountID)
 		tx.Rollback()
 		logger.Errorf("Failed to set RabbitMQ permissions: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := rmqClient.SetUserLimit(user.AccountID, 1, 1); err != nil {
+		rmqClient.DeleteUser(user.AccountID)
+		rmqClient.DeleteVhost(user.AccountID)
+		tx.Rollback()
+		logger.Errorf("Failed to set RabbitMQ user limits: %v", err)
 		return echo.ErrInternalServerError
 	}
 
