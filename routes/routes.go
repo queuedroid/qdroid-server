@@ -12,6 +12,9 @@ import (
 
 func RegisterRoutes(e *echo.Echo) {
 	commons.Logger.Debug("Registering v1 routes")
+
+	e.GET("/public/*", handlers.ServeStaticFile)
+
 	api_v1 := e.Group("/v1")
 	api_v1.POST("/auth/signup", handlers.SignupHandler)
 	api_v1.POST("/auth/login", handlers.LoginHandler)

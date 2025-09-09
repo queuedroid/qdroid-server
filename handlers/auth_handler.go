@@ -305,11 +305,13 @@ func SignupHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
+	baseUrl := commons.GetEnv("BASE_URL", "https://api.queuedroid.com")
 	verifyLink := commons.GetEnv("EMAIL_VERIFICATION_URL", "https://queuedroid.com") + "/verify-email?token=" + verificationToken
 	vars := map[string]any{
 		"username":          req.Email,
 		"product_name":      "Queuedroid",
 		"verification_link": verifyLink,
+		"base_url":          baseUrl,
 		"expiration_hours":  "24",
 	}
 

@@ -1,177 +1,286 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Welcome to QueueDroid - Verify Your Email</title>
-    <style>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>Welcome to QueueDroid!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type="text/css">
+      /**
+   * Google webfonts. Recommended to include the .woff version for cross-client compatibility.
+   */
+      @media screen {
+        @font-face {
+          font-family: "Source Sans Pro";
+          font-style: normal;
+          font-weight: 400;
+          src: local("Source Sans Pro Regular"), local("SourceSansPro-Regular"),
+            url(https://fonts.gstatic.com/s/sourcesanspro/v10/ODelI1aHBYDBqgeIAH2zlBM0YzuT7MdOe03otPbuUS0.woff)
+              format("woff");
+        }
+
+        @font-face {
+          font-family: "Source Sans Pro";
+          font-style: normal;
+          font-weight: 700;
+          src: local("Source Sans Pro Bold"), local("SourceSansPro-Bold"),
+            url(https://fonts.gstatic.com/s/sourcesanspro/v10/toadOcfmlt9b38dHJxOBGFkQc6VGVFSmCnC_l7QZG60.woff)
+              format("woff");
+        }
+        @font-face {
+          font-family: "Wix Madefor Display";
+          font-style: normal;
+          font-weight: 400;
+          src: local("Wix Madefor Display Regular"),
+            local("WixMadeforDisplay-Regular"),
+            url(../Wix_Madefor_Display/WixMadeforDisplay-VariableFont_wght.ttf)
+              format("truetype");
+        }
+        @font-face {
+          font-family: "Ubuntu";
+          font-style: normal;
+          font-weight: 400;
+          src: local("Ubuntu Regular"), local("Ubuntu-Regular"),
+            url(https://fonts.gstatic.com/s/ubuntu/v15/4iCs6KVjbNBYlgoKcg72j00.woff)
+              format("woff");
+        }
+      }
+
+      /**
+   * Avoid browser level font resizing.
+   * 1. Windows Mobile
+   * 2. iOS / OSX
+   */
+      body,
+      table,
+      td,
+      a {
+        font-family: "Wix Madefor Display", "Ubuntu", Helvetica, Arial,
+          sans-serif;
+        -ms-text-size-adjust: 100%; /* 1 */
+        -webkit-text-size-adjust: 100%; /* 2 */
+      }
+
+      /**
+   * Remove extra space added to tables and cells in Outlook.
+   */
+      table,
+      td {
+        mso-table-rspace: 0pt;
+        mso-table-lspace: 0pt;
+      }
+
+      /**
+   * Better fluid images in Internet Explorer.
+   */
+      img {
+        -ms-interpolation-mode: bicubic;
+      }
+
+      /**
+   * Remove blue links for iOS devices.
+   */
+      a[x-apple-data-detectors] {
+        font-family: inherit !important;
+        font-size: inherit !important;
+        font-weight: inherit !important;
+        line-height: inherit !important;
+        color: inherit !important;
+        text-decoration: none !important;
+      }
+
+      /**
+   * Fix centering issues in Android 4.4.
+   */
+      div[style*="margin: 16px 0;"] {
+        margin: 0 !important;
+      }
+
       body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
       }
-      .header {
-        background: linear-gradient(135deg, #e8f4fd 0%, #f4f4f4 100%);
-        padding: 20px;
-        text-align: center;
-        border-radius: 5px;
-        margin-bottom: 20px;
+
+      /**
+   * Collapse table borders to avoid space between cells.
+   */
+      table {
+        border-collapse: collapse !important;
       }
-      .welcome-icon {
-        font-size: 48px;
-        margin-bottom: 10px;
+
+      a {
+        color: black;
       }
-      .content {
-        padding: 20px 0;
-      }
-      .welcome-section {
-        background-color: #f9f9f9;
-        padding: 20px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        border-left: 4px solid #28a745;
-      }
-      .verification-section {
-        background-color: #fff3cd;
-        padding: 20px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        border-left: 4px solid #ffc107;
-      }
-      .verify-button {
-        display: inline-block;
-        background-color: #007bff;
-        color: white;
-        padding: 12px 25px;
+
+      img {
+        height: auto;
+        line-height: 100%;
         text-decoration: none;
-        border-radius: 5px;
-        margin: 15px 0;
-        font-weight: bold;
-        transition: background-color 0.3s;
-      }
-      .verify-button:hover {
-        background-color: #0056b3;
-      }
-      .features-list {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 5px;
-        margin: 20px 0;
-      }
-      .features-list ul {
-        margin: 0;
-        padding-left: 20px;
-      }
-      .features-list li {
-        margin-bottom: 8px;
-      }
-      .important-note {
-        background-color: #d1ecf1;
-        padding: 15px;
-        border-radius: 5px;
-        border-left: 4px solid #bee5eb;
-        margin: 20px 0;
-      }
-      .footer {
-        background-color: #f4f4f4;
-        padding: 15px;
-        text-align: center;
-        font-size: 12px;
-        color: #666;
-        border-radius: 5px;
-        margin-top: 30px;
-      }
-      .link-fallback {
-        word-break: break-all;
-        color: #007bff;
-        font-size: 14px;
-        background-color: #f8f9fa;
-        padding: 10px;
-        border-radius: 3px;
-        margin: 10px 0;
+        border: 0;
+        outline: none;
       }
     </style>
   </head>
-  <body>
-    <div class="header">
-      <div class="welcome-icon">🎉</div>
-      <h1>Welcome to QueueDroid!</h1>
-      <p style="margin: 0; color: #666">One more step to get started</p>
+  <body style="background-color: #f5f6fa; margin: 0; padding: 0">
+    <!-- start preheader -->
+    <div
+      class="preheader"
+      style="
+        display: none;
+        max-width: 0;
+        max-height: 0;
+        overflow: hidden;
+        font-size: 1px;
+        line-height: 1px;
+        color: #fff;
+        opacity: 0;
+      "
+    >
+      Welcome to Queuedriod! We're excited to have you on board.
     </div>
-
-    <div class="content">
-      <div class="welcome-section">
-        <h2 style="margin-top: 0; color: #28a745">
-          Hello{{if .name}} {{.name}},{{else}}!{{end}}
-        </h2>
-        <p>
-          We're thrilled to welcome you to QueueDroid! Thank you for joining our
-          platform. You're now part of a community that values efficient queue
-          management and seamless communication.
-        </p>
-      </div>
-
-      <div class="verification-section">
-        <h3 style="margin-top: 0; color: #856404">
-          📧 Please Verify Your Email Address
-        </h3>
-        <p>
-          To complete your registration and ensure the security of your account,
-          please verify your email address by clicking the button below:
-        </p>
-
-        <p style="text-align: center">
-          <a href="{{.verification_link}}" class="verify-button"
-            >✅ Verify Email Address</a
+    <!-- end preheader -->
+    <table
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      width="100%"
+      style="background-color: #f5f6fa"
+    >
+      <tr>
+        <td align="center" style="padding-top: 40px">
+          <table
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            width="100%"
+            style="
+              max-width: 600px;
+              background: #fff;
+              border-radius: 6px;
+              box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+              margin: 32px auto;
+            "
           >
-        </p>
-
-        <p>
-          <strong>Can't see the button?</strong> Copy and paste this link into
-          your browser:
-        </p>
-        <div class="link-fallback">{{.verification_link}}</div>
-      </div>
-
-      <div class="features-list">
-        <h3 style="margin-top: 0">🚀 What you can do with QueueDroid:</h3>
-        <ul>
-          <li>Manage queues efficiently and effectively</li>
-          <li>Send and receive messages seamlessly</li>
-          <li>Monitor real-time analytics and statistics</li>
-          <li>Integrate with your existing workflows</li>
-          <li>Access powerful API features</li>
-        </ul>
-      </div>
-
-      <div class="important-note">
-        <h4 style="margin-top: 0">⏰ Important Information:</h4>
-        <ul style="margin-bottom: 0">
-          <li>
-            This verification link will expire in <strong>24 hours</strong> for
-            security reasons
-          </li>
-          <li>
-            Once verified, you'll have full access to all QueueDroid features
-          </li>
-          <li>If you didn't create this account, please ignore this email</li>
-          <li>Need help? Contact our support team</li>
-        </ul>
-      </div>
-
-      <p>We're excited to see what you'll build with QueueDroid!</p>
-      <p>Best regards,<br />The QueueDroid Team</p>
-    </div>
-
-    <div class="footer">
-      <p>&copy; 2025 QueueDroid. All rights reserved.</p>
-      <p>
-        This email was sent to {{.email}} because you created a QueueDroid
-        account.
-      </p>
-    </div>
+            <tr>
+              <td
+                style="
+                  padding: 25px 25px 25px 25px;
+                  text-align: start;
+                  font-family: 'Wix Madefor Display', 'Ubuntu', Helvetica, Arial,
+                    sans-serif;
+                "
+              >
+                <img
+                  src="{{.base_url}}/public/queuedroid_email_banner.png"
+                  alt="Queuedriod Logo"
+                  width="100%"
+                  style="
+                    display: block;
+                    margin: 0 auto 20px auto;
+                    border-radius: 0;
+                    box-shadow: none;
+                    background: #fff;
+                    max-width: 100%;
+                    height: auto;
+                  "
+                />
+                <h1
+                  style="
+                    font-size: 24px;
+                    font-weight: 900;
+                    color: #1a203a;
+                    margin-bottom: 12px;
+                  "
+                >
+                  Hello{{if .name}} {{.name}},{{else}}!{{end}}
+                </h1>
+                <p style="font-size: 17px; color: #333; margin-bottom: 24px">
+                  Thank you for signing up with QueueDroid. We're excited to
+                  have you on board! To get started, please confirm your email
+                  address below. Once confirmed, you can access your dashboard
+                  and explore all features.
+                </p>
+                <div
+                  style="
+                    margin-bottom: 32px;
+                    text-align: center;
+                    margin-top: 40px;
+                  "
+                >
+                  <a
+                    href="{{.verification_link}}"
+                    target="_blank"
+                    style="
+                      display: inline-block;
+                      background: #b63b16;
+                      color: #fff;
+                      font-size: 16px;
+                      font-weight: 600;
+                      padding: 14px 36px;
+                      border-radius: 8px;
+                      text-decoration: none;
+                      box-shadow: 0 2px 8px rgba(182, 59, 22, 0.12);
+                      margin-right: 12px;
+                    "
+                    >Confirm Email</a
+                  >
+                </div>
+                <p style="font-size: 13px; color: #888; margin-top: 8px">
+                  If you did not sign up for Queuedriod, you can safely ignore
+                  this email.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style="
+                  padding: 0 32px 32px 32px;
+                  text-align: left;
+                  font-family: 'Wix Madefor Display', 'Ubuntu', Helvetica, Arial,
+                    sans-serif;
+                "
+              >
+                <hr
+                  style="
+                    border: none;
+                    border-top: 1px solid #e9ecef;
+                    margin: 32px 0 16px 0;
+                  "
+                />
+                <p style="font-size: 14px; color: #888; margin: 0">
+                  If you have any questions, contact our support team at
+                  <a href="mailto:support@queuedriod.com" style="color: #1a82e2"
+                    >support@queuedriod.com</a
+                  >.
+                </p>
+                <p style="font-size: 14px; color: #888; margin: 16px 0 0 0">
+                  Cheers,<br />The Queuedriod Team
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td
+          align="center"
+          style="
+            padding: 32px 0 16px 0;
+            font-family: 'Wix Madefor Display', 'Ubuntu', Helvetica, Arial,
+              sans-serif;
+            font-size: 13px;
+            color: #aaa;
+          "
+        >
+          <p style="margin: 0">
+            You received this email because you signed up for a QueueDroid
+            account. If you didn't, you can safely ignore this email.
+          </p>
+          <p style="margin: 8px 0 0 0">queuedriod.com</p>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
