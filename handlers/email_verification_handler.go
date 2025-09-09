@@ -77,11 +77,13 @@ func SendVerificationEmailHandler(c echo.Context) error {
 	email := string(emailBytes)
 	fullName := ""
 
+	baseUrl := commons.GetEnv("BASE_URL", "https://api.queuedroid.com")
 	verifyLink := commons.GetEnv("EMAIL_VERIFICATION_URL", "https://queuedroid.com") + "/verify-email?token=" + token
 	vars := map[string]any{
 		"username":          email,
 		"product_name":      "Queuedroid",
 		"verification_link": verifyLink,
+		"base_url":          baseUrl,
 		"expiration_hours":  "24",
 	}
 
