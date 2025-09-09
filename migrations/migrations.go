@@ -210,8 +210,8 @@ func List() []*gormigrate.Migration {
 					return fmt.Errorf("failed to fetch free plan: %w", err)
 				}
 
-				var subscription models.Subscription
 				for _, user := range users {
+					var subscription models.Subscription
 					if err := tx.Where("user_id = ? AND status = ?", user.ID, models.ActiveSubscription).
 						Assign(models.Subscription{
 							UserID:    user.ID,
