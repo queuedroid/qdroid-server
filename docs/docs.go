@@ -116,6 +116,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/echo.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden, no active subscription found or max API keys reached",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
@@ -755,6 +761,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden, no active subscription found or max projects reached",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
@@ -1457,6 +1469,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/echo.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden, no active subscription found or monthly message limit would be exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
                     "413": {
                         "description": "File too large (CSV only)",
                         "schema": {
@@ -1530,6 +1548,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden, no active subscription found or monthly message limit reached",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
@@ -2266,6 +2290,11 @@ const docTemplate = `{
                     "description": "Message indicating successful retrieval",
                     "type": "string",
                     "example": "User retrieved successfully"
+                },
+                "subscription": {
+                    "description": "User's subscription plan",
+                    "type": "string",
+                    "example": "FREE"
                 }
             }
         },

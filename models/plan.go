@@ -23,6 +23,7 @@ type Plan struct {
 	DurationInDays      *uint    `gorm:"default:null"`
 	MaxProjects         *uint    `gorm:"default:null"`
 	MaxMessagesPerMonth *uint    `gorm:"default:null"`
+	MaxAPIKeys          *uint    `gorm:"default:null"`
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	DeletedAt           gorm.DeletedAt `gorm:"index"`

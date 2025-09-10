@@ -26,6 +26,7 @@ import (
 // @Success      201 {object} CreateAPIKeyResponse "API key created successfully"
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      403 {object} echo.HTTPError     "Forbidden, no active subscription found or max API keys reached"
 // @Failure      409 {object} echo.HTTPError     "Duplicate API key name detected"
 // @Failure      404 {object} echo.HTTPError     "User not found"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
@@ -56,6 +57,45 @@ func CreateAPIKeyHandler(c echo.Context) error {
 		return &echo.HTTPError{
 			Code:    http.StatusBadRequest,
 			Message: "name field is required",
+		}
+	}
+
+	subscription := models.Subscription{}
+	if err := db.Conn.Preload("Plan").Where("user_id = ? AND status = ?",
+		user.ID,
+		models.ActiveSubscription).
+		First(&subscription).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("No active subscription found for user.")
+			return &echo.HTTPError{
+				Code:    http.StatusForbidden,
+				Message: "No active subscription found. Please subscribe to a plan to create API keys.",
+			}
+		}
+		logger.Errorf("Failed to fetch user subscription: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if subscription.Plan.MaxAPIKeys != nil {
+		var currentAPIKeyCount int64
+		if err := db.Conn.Model(&models.APIKey{}).
+			Where("user_id = ?", user.ID).
+			Count(&currentAPIKeyCount).Error; err != nil {
+			logger.Errorf("Failed to count user API keys: %v", err)
+			return echo.ErrInternalServerError
+		}
+
+		if currentAPIKeyCount >= int64(*subscription.Plan.MaxAPIKeys) {
+			logger.Errorf("User has reached the maximum number of API keys for their subscription plan.")
+			return &echo.HTTPError{
+				Code: http.StatusForbidden,
+				Message: fmt.Sprintf(
+					"You have reached the maximum number of API keys (%d) allowed for your %s subscription plan. "+
+						"Please upgrade your plan to create more API keys.",
+					*subscription.Plan.MaxAPIKeys,
+					subscription.Plan.Name,
+				),
+			}
 		}
 	}
 

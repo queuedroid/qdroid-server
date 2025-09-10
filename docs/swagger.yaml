@@ -407,6 +407,10 @@ definitions:
         description: Message indicating successful retrieval
         example: User retrieved successfully
         type: string
+      subscription:
+        description: User's subscription plan
+        example: FREE
+        type: string
     type: object
   handlers.LoginRequest:
     properties:
@@ -645,6 +649,10 @@ paths:
             $ref: '#/definitions/echo.HTTPError'
         "401":
           description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "403":
+          description: Forbidden, no active subscription found or max API keys reached
           schema:
             $ref: '#/definitions/echo.HTTPError'
         "404":
@@ -1072,6 +1080,10 @@ paths:
             $ref: '#/definitions/echo.HTTPError'
         "401":
           description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "403":
+          description: Forbidden, no active subscription found or max projects reached
           schema:
             $ref: '#/definitions/echo.HTTPError'
         "409":
@@ -1547,6 +1559,11 @@ paths:
           description: Unauthorized, invalid or expired session token
           schema:
             $ref: '#/definitions/echo.HTTPError'
+        "403":
+          description: Forbidden, no active subscription found or monthly message
+            limit would be exceeded
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
         "413":
           description: File too large (CSV only)
           schema:
@@ -1596,6 +1613,11 @@ paths:
             $ref: '#/definitions/echo.HTTPError'
         "401":
           description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "403":
+          description: Forbidden, no active subscription found or monthly message
+            limit reached
           schema:
             $ref: '#/definitions/echo.HTTPError'
         "404":

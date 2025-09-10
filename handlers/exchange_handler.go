@@ -31,6 +31,7 @@ import (
 // @Success      201 {object} CreateExchangeResponse "Exchange created successfully"
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      403 {object} echo.HTTPError     "Forbidden, no active subscription found or max projects reached"
 // @Failure      409 {object} echo.HTTPError     "Duplicate exchange label"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
 // @Router       /v1/exchanges/ [post]
@@ -66,6 +67,45 @@ func CreateExchangeHandler(c echo.Context) error {
 		return &echo.HTTPError{
 			Code:    http.StatusBadRequest,
 			Message: "label field is required",
+		}
+	}
+
+	subscription := models.Subscription{}
+	if err := db.Conn.Preload("Plan").Where("user_id = ? AND status = ?",
+		user.ID,
+		models.ActiveSubscription).
+		First(&subscription).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("No active subscription found for user.")
+			return &echo.HTTPError{
+				Code:    http.StatusForbidden,
+				Message: "No active subscription found. Please subscribe to a plan to create exchanges.",
+			}
+		}
+		logger.Errorf("Failed to fetch user subscription: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if subscription.Plan.MaxProjects != nil {
+		var currentExchangeCount int64
+		if err := db.Conn.Model(&models.Exchange{}).
+			Where("user_id = ?", user.ID).
+			Count(&currentExchangeCount).Error; err != nil {
+			logger.Errorf("Failed to count user exchanges: %v", err)
+			return echo.ErrInternalServerError
+		}
+
+		if currentExchangeCount >= int64(*subscription.Plan.MaxProjects) {
+			logger.Errorf("User has reached the maximum number of projects for their subscription plan.")
+			return &echo.HTTPError{
+				Code: http.StatusForbidden,
+				Message: fmt.Sprintf(
+					"You have reached the maximum number of projects (%d) allowed for your %s subscription plan. "+
+						"Please upgrade your plan to create more projects.",
+					*subscription.Plan.MaxProjects,
+					subscription.Plan.Name,
+				),
+			}
 		}
 	}
 

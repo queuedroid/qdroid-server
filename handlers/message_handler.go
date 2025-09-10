@@ -16,6 +16,7 @@ import (
 	"qdroid-server/models"
 	"qdroid-server/rabbitmq"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -37,6 +38,7 @@ import (
 // @Success      200 {object} GenericResponse "Message processed successfully"
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields or invalid phone number"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      403 {object} echo.HTTPError     "Forbidden, no active subscription found or monthly message limit reached"
 // @Failure      404 {object} echo.HTTPError     "Exchange or queue not found"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
 // @Router       /v1/messages/send [post]
@@ -108,6 +110,7 @@ func SendMessageHandler(c echo.Context) error {
 // @Success      202 {object} BulkSendMessageResponse "Bulk message processing started"
 // @Failure      400 {object} echo.HTTPError     "Bad request, missing required fields or invalid data"
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
+// @Failure      403 {object} echo.HTTPError     "Forbidden, no active subscription found or monthly message limit would be exceeded"
 // @Failure      413 {object} echo.HTTPError     "File too large (CSV only)"
 // @Failure      415 {object} echo.HTTPError     "Unsupported media type, please use application/json or multipart/form-data"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
@@ -164,6 +167,51 @@ func SendBulkMessagesHandler(c echo.Context) error {
 		return &echo.HTTPError{
 			Code:    http.StatusUnsupportedMediaType,
 			Message: "Unsupported content type, please use application/json or multipart/form-data",
+		}
+	}
+
+	subscription := models.Subscription{}
+	if err := db.Conn.Preload("Plan").Where("user_id = ? AND status = ?",
+		user.ID,
+		models.ActiveSubscription).
+		First(&subscription).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("No active subscription found for user.")
+			return &echo.HTTPError{
+				Code:    http.StatusForbidden,
+				Message: "No active subscription found. Please subscribe to a plan to send messages.",
+			}
+		}
+		logger.Errorf("Failed to fetch user subscription: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if subscription.Plan.MaxMessagesPerMonth != nil {
+		now := time.Now()
+		startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+
+		var currentMessageCount int64
+		if err := db.Conn.Model(&models.EventLog{}).
+			Where("user_id = ? AND category = ? AND created_at >= ?",
+				user.ID, models.Message, startOfMonth).
+			Count(&currentMessageCount).Error; err != nil {
+			logger.Errorf("Failed to count user messages for current month: %v", err)
+			return echo.ErrInternalServerError
+		}
+
+		if currentMessageCount+int64(messageCount) > int64(*subscription.Plan.MaxMessagesPerMonth) {
+			logger.Errorf("User would exceed the maximum number of messages for their subscription plan.")
+			return &echo.HTTPError{
+				Code: http.StatusForbidden,
+				Message: fmt.Sprintf(
+					"This bulk operation would exceed your monthly message limit. "+
+						"You have %d messages remaining out of %d allowed for your %s subscription plan. "+
+						"Please upgrade your plan or reduce the number of messages.",
+					int64(*subscription.Plan.MaxMessagesPerMonth)-currentMessageCount,
+					*subscription.Plan.MaxMessagesPerMonth,
+					subscription.Plan.Name,
+				),
+			}
 		}
 	}
 
@@ -385,6 +433,50 @@ func processMessage(req SendMessageRequest, user *models.User, logger echo.Logge
 		return &echo.HTTPError{
 			Code:    http.StatusBadRequest,
 			Message: "phone_number field is required",
+		}
+	}
+
+	subscription := models.Subscription{}
+	if err := db.Conn.Preload("Plan").Where("user_id = ? AND status = ?",
+		user.ID,
+		models.ActiveSubscription).
+		First(&subscription).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("No active subscription found for user.")
+			return &echo.HTTPError{
+				Code:    http.StatusForbidden,
+				Message: "No active subscription found. Please subscribe to a plan to send messages.",
+			}
+		}
+		logger.Errorf("Failed to fetch user subscription: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if subscription.Plan.MaxMessagesPerMonth != nil {
+		now := time.Now()
+		startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+
+		var currentMessageCount int64
+		if err := db.Conn.Model(&models.EventLog{}).
+			Where("user_id = ? AND category = ? AND created_at >= ?",
+				user.ID, models.Message, startOfMonth).
+			Count(&currentMessageCount).Error; err != nil {
+			logger.Errorf("Failed to count user messages for current month: %v", err)
+			return echo.ErrInternalServerError
+		}
+
+		if currentMessageCount >= int64(*subscription.Plan.MaxMessagesPerMonth) {
+			logger.Errorf("User has reached the maximum number of messages for their subscription plan.")
+			return &echo.HTTPError{
+				Code: http.StatusForbidden,
+				Message: fmt.Sprintf(
+					"You have reached the maximum number of messages (%d) allowed for "+
+						"your %s subscription plan this month. "+
+						"Please upgrade your plan to send more messages.",
+					*subscription.Plan.MaxMessagesPerMonth,
+					subscription.Plan.Name,
+				),
+			}
 		}
 	}
 

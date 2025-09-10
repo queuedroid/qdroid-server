@@ -226,5 +226,19 @@ func List() []*gormigrate.Migration {
 			},
 			Rollback: func(tx *gorm.DB) error { return nil },
 		},
+		{
+			ID: "007_set_max_api_keys_for_plans",
+			Migrate: func(tx *gorm.DB) error {
+				freeMaxAPIKeys := uint(1)
+				if err := tx.Model(&models.Plan{}).
+					Where("name = ?", models.FreePlan).
+					Update("max_api_keys", freeMaxAPIKeys).Error; err != nil {
+					return fmt.Errorf("failed to update free plan max API keys: %w", err)
+				}
+
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error { return nil },
+		},
 	}
 }
