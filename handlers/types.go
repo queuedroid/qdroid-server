@@ -463,3 +463,37 @@ type GetSubscriptionSummaryResponse struct {
 	// List of actions available to the user
 	AvailableActions []string `json:"available_actions" example:"[\"create_project\", \"create_api_key\", \"send_message\"]"`
 }
+
+// swagger:model PlanPricing
+type PlanPricing struct {
+	// Monthly price in cents/smallest currency unit
+	Monthly uint `json:"monthly" example:"999"`
+	// Yearly price in cents/smallest currency unit
+	Yearly uint `json:"yearly" example:"9999"`
+	// Currency code
+	Currency string `json:"currency" example:"USD"`
+}
+
+// swagger:model PlanOption
+type PlanOption struct {
+	// Plan ID
+	ID uint `json:"id" example:"1"`
+	// Plan name
+	Name string `json:"name" example:"PLUS"`
+	// Plan pricing information
+	Pricing PlanPricing `json:"pricing"`
+	// Whether this is the recommended plan
+	Recommended bool `json:"recommended" example:"true"`
+	// List of plan features
+	Features []string `json:"features" example:"[\"Unlimited projects\", \"Priority support\", \"Advanced analytics\"]"`
+	// Discount percentage for yearly plans
+	Discount uint `json:"discount" example:"10"`
+}
+
+// swagger:model GetPlansResponse
+type GetPlansResponse struct {
+	// Operation success message
+	Message string `json:"message" example:"Plans retrieved successfully"`
+	// List of available plans
+	Plans []PlanOption `json:"plans"`
+}
