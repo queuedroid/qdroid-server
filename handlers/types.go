@@ -379,3 +379,87 @@ type VerifyEmailRequest struct {
 	// required: true
 	Token string `json:"token" example:"evt_a1b2c3d4e5f6789"`
 }
+
+// swagger:model PlanDetails
+type PlanDetails struct {
+	// Plan ID
+	ID uint `json:"id" example:"1"`
+	// Plan name
+	Name string `json:"name" example:"FREE"`
+	// Plan price in cents
+	Price uint `json:"price" example:"0"`
+	// Currency for the plan price
+	Currency string `json:"currency" example:"USD"`
+	// Duration of the plan in days
+	DurationInDays *uint `json:"duration_in_days" example:"30"`
+	// Maximum number of projects allowed
+	MaxProjects *uint `json:"max_projects" example:"5"`
+	// Maximum messages per month allowed
+	MaxMessagesPerMonth *uint `json:"max_messages_per_month" example:"1000"`
+	// Maximum API keys allowed
+	MaxAPIKeys *uint `json:"max_api_keys" example:"3"`
+}
+
+// swagger:model GetSubscriptionResponse
+type GetSubscriptionResponse struct {
+	// Message indicating successful operation
+	Message string `json:"message" example:"Subscription details retrieved successfully"`
+	// Subscription ID
+	ID uint `json:"id" example:"1"`
+	// Subscription status
+	Status string `json:"status" example:"ACTIVE"`
+	// Whether auto-renewal is enabled
+	AutoRenew bool `json:"auto_renew" example:"true"`
+	// Date when subscription started
+	StartedAt string `json:"started_at" example:"2025-01-01T00:00:00Z"`
+	// Date when subscription expires (null for unlimited plans)
+	ExpiresAt *string `json:"expires_at" example:"2025-02-01T00:00:00Z"`
+	// Days remaining until expiration (null for unlimited plans)
+	DaysRemaining *int `json:"days_remaining" example:"22"`
+	// Plan details
+	Plan PlanDetails `json:"plan"`
+	// Date when subscription was created
+	CreatedAt string `json:"created_at" example:"2025-01-01T00:00:00Z"`
+	// Date when subscription was last updated
+	UpdatedAt string `json:"updated_at" example:"2025-01-01T00:00:00Z"`
+}
+
+// swagger:model UsageItem
+type UsageItem struct {
+	// Current usage count
+	Current int `json:"current" example:"3"`
+	// Maximum allowed (null means unlimited)
+	Limit *uint `json:"limit" example:"5"`
+	// Usage percentage (0-100, null if unlimited)
+	Percentage *float64 `json:"percentage" example:"60.0"`
+}
+
+// swagger:model UsageDetails
+type UsageDetails struct {
+	// Projects usage
+	Projects UsageItem `json:"projects"`
+	// API keys usage
+	APIKeys UsageItem `json:"api_keys"`
+	// Messages sent this month
+	MessagesThisMonth UsageItem `json:"messages_this_month"`
+}
+
+// swagger:model GetSubscriptionSummaryResponse
+type GetSubscriptionSummaryResponse struct {
+	// Message indicating successful operation
+	Message string `json:"message" example:"Subscription summary retrieved successfully"`
+	// Plan name
+	PlanName string `json:"plan_name" example:"FREE"`
+	// Subscription status
+	Status string `json:"status" example:"ACTIVE"`
+	// Whether auto-renewal is enabled
+	AutoRenew bool `json:"auto_renew" example:"true"`
+	// Days remaining until expiration (null for unlimited plans)
+	DaysRemaining *int `json:"days_remaining" example:"22"`
+	// Whether subscription is expiring within 7 days
+	IsExpiringSoon bool `json:"is_expiring_soon" example:"false"`
+	// Current usage details
+	Usage UsageDetails `json:"usage"`
+	// List of actions available to the user
+	AvailableActions []string `json:"available_actions" example:"[\"create_project\", \"create_api_key\", \"send_message\"]"`
+}
