@@ -121,6 +121,20 @@
         border: 0;
         outline: none;
       }
+
+      /* Custom styles for improved visual appeal */
+      .expiration-notice {
+        background: #f8f9fa;
+        border-left: 4px solid #b63b16;
+        border-radius: 6px;
+        padding: 16px 20px;
+        margin: 24px 0;
+      }
+
+      .highlight-text {
+        font-weight: 600;
+        color: #2c3e50;
+      }
     </style>
   </head>
   <body style="background-color: #f5f6fa; margin: 0; padding: 0">
@@ -191,16 +205,26 @@
                 />
                 <h1
                   style="
-                    font-size: 24px;
+                    font-size: 28px;
                     font-weight: 900;
                     color: #1a203a;
-                    margin-bottom: 12px;
+                    margin-bottom: 16px;
                     margin-top: 0;
+                    text-align: center;
+                    line-height: 1.3;
                   "
                 >
                   Confirm Your Email Address
                 </h1>
-                <p style="font-size: 17px; color: #333; margin-bottom: 24px">
+                <p
+                  style="
+                    font-size: 18px;
+                    color: #333;
+                    margin-bottom: 28px;
+                    text-align: center;
+                    line-height: 1.6;
+                  "
+                >
                   Thank you for your interest in QueueDroid. To complete your
                   registration and activate your account, please confirm your
                   email address below.
@@ -209,7 +233,7 @@
                   style="
                     margin-bottom: 32px;
                     text-align: center;
-                    margin-top: 40px;
+                    margin-top: 24px;
                   "
                 >
                   <a
@@ -219,19 +243,28 @@
                       display: inline-block;
                       background: #b63b16;
                       color: #fff;
-                      font-size: 16px;
-                      font-weight: 600;
-                      padding: 14px 36px;
+                      font-size: 18px;
+                      font-weight: 700;
+                      padding: 16px 40px;
                       border-radius: 8px;
                       text-decoration: none;
-                      box-shadow: 0 2px 8px rgba(182, 59, 22, 0.12);
-                      transition: background-color 0.3s ease;
+                      box-shadow: 0 2px 8px rgba(182, 59, 22, 0.2);
+                      transition: all 0.3s ease;
+                      text-align: center;
                     "
                     >Verify Email Address</a
                   >
                 </div>
 
-                <p style="font-size: 14px; color: #888; margin-top: 24px">
+                <p
+                  style="
+                    font-size: 15px;
+                    color: #666;
+                    margin-top: 24px;
+                    text-align: center;
+                    line-height: 1.5;
+                  "
+                >
                   If the button doesn't work, you can copy and paste this link
                   into your browser:
                 </p>
@@ -240,16 +273,36 @@
                     font-size: 14px;
                     color: #1a82e2;
                     word-break: break-all;
-                    margin-bottom: 24px;
+                    margin-bottom: 28px;
+                    text-align: center;
+                    background: #f8f9fa;
+                    padding: 12px;
+                    border-radius: 6px;
+                    border: 1px solid #e9ecef;
                   "
                 >
                   <a
                     href="{{.verification_link}}"
                     target="_blank"
-                    style="color: #1a82e2"
+                    style="color: #1a82e2; text-decoration: none"
                     >{{.verification_link}}</a
                   >
                 </p>
+
+                <!-- Expiration Notice -->
+                <div class="expiration-notice">
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 14px;
+                      color: #6c757d;
+                      text-align: center;
+                    "
+                  >
+                    <strong>Note:</strong> This verification link will expire in
+                    24 hours from the time it was sent.
+                  </p>
+                </div>
               </td>
             </tr>
             <tr>
@@ -264,22 +317,54 @@
                 <hr
                   style="
                     border: none;
-                    border-top: 1px solid #e9ecef;
-                    margin: 32px 0 16px 0;
+                    border-top: 2px solid #e9ecef;
+                    margin: 32px 0 20px 0;
                   "
                 />
-                <p style="font-size: 13px; color: #888; margin: 0 0 16px 0">
+                <p
+                  style="
+                    font-size: 14px;
+                    color: #6c757d;
+                    margin: 0 0 16px 0;
+                    text-align: center;
+                    line-height: 1.5;
+                  "
+                >
                   If you didn't create a QueueDroid account, you can safely
                   ignore this email.
                 </p>
-                <p style="font-size: 14px; color: #888; margin: 0">
+                <p
+                  style="
+                    font-size: 15px;
+                    color: #6c757d;
+                    margin: 0;
+                    text-align: center;
+                    line-height: 1.6;
+                  "
+                >
                   If you have any questions, please contact our support team at
-                  <a href="mailto:support@queuedroid.com" style="color: #1a82e2"
+                  <a
+                    href="mailto:support@queuedroid.com"
+                    style="
+                      color: #1a82e2;
+                      text-decoration: none;
+                      font-weight: 600;
+                    "
                     >support@queuedroid.com</a
                   >.
                 </p>
-                <p style="font-size: 14px; color: #888; margin: 16px 0 0 0">
-                  Best regards,<br />The QueueDroid Team
+                <p
+                  style="
+                    font-size: 16px;
+                    color: #495057;
+                    margin: 24px 0 0 0;
+                    text-align: center;
+                    line-height: 1.5;
+                    font-weight: 500;
+                  "
+                >
+                  Best regards,<br />
+                  <span style="font-weight: 700">The QueueDroid Team</span>
                 </p>
               </td>
             </tr>
