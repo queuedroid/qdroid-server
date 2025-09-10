@@ -405,7 +405,7 @@ type GetSubscriptionResponse struct {
 	// Message indicating successful operation
 	Message string `json:"message" example:"Subscription details retrieved successfully"`
 	// Subscription ID
-	ID uint `json:"id" example:"1"`
+	ID string `json:"id" example:"sub_a1b2c3d4e5f6789"`
 	// Subscription status
 	Status string `json:"status" example:"ACTIVE"`
 	// Whether auto-renewal is enabled

@@ -48,7 +48,7 @@ func GetPlansHandler(c echo.Context) error {
 		case models.FreePlan:
 			features = []string{
 				"1 device connection",
-				fmt.Sprintf("%d messages/month", *plan.MaxMessagesPerMonth),
+				fmt.Sprintf("%d messages per month", *plan.MaxMessagesPerMonth),
 				fmt.Sprintf("%d project(s)", *plan.MaxProjects),
 				fmt.Sprintf("%d API key(s)", *plan.MaxAPIKeys),
 				"Community support",
@@ -57,7 +57,7 @@ func GetPlansHandler(c echo.Context) error {
 		case models.PlusPlan:
 			features = []string{
 				"Unlimited device connections",
-				"Unlimited messages/month",
+				"Unlimited messages per month",
 				"Unlimited projects",
 				"Unlimited API keys",
 				"Priority support",

@@ -37,7 +37,7 @@ func calculateUsagePercentage(current int, limit *uint) *float64 {
 // @Failure      401 {object} echo.HTTPError     "Unauthorized, invalid or expired session token"
 // @Failure      404 {object} echo.HTTPError     "No subscription found for the user"
 // @Failure      500 {object} echo.HTTPError     "Internal server error"
-// @Router       /v1/subscriptions [get]
+// @Router       /v1/subscriptions/ [get]
 func GetSubscriptionHandler(c echo.Context) error {
 	logger := c.Logger()
 
@@ -91,7 +91,7 @@ func GetSubscriptionHandler(c echo.Context) error {
 
 	response := GetSubscriptionResponse{
 		Message:       "Subscription details retrieved successfully",
-		ID:            subscription.ID,
+		ID:            subscription.SubscriptionID,
 		Status:        string(subscription.Status),
 		AutoRenew:     subscription.AutoRenew,
 		StartedAt:     subscription.StartedAt.Format(time.RFC3339),

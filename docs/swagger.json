@@ -1562,6 +1562,147 @@
                 }
             }
         },
+        "/v1/plans": {
+            "get": {
+                "description": "Retrieves all available subscription plans with monthly and yearly pricing options for display to clients.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "Get available plans",
+                "responses": {
+                    "200": {
+                        "description": "Plans retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GetPlansResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/subscriptions/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves detailed information about the authenticated user's subscription, including plan details, usage limits, and subscription status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Get user subscription details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription details retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GetSubscriptionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "No subscription found for the user",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/subscriptions/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a summary of the user's subscription including current usage statistics, limits, and available actions.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscriptions"
+                ],
+                "summary": "Get subscription summary with usage statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription summary retrieved successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GetSubscriptionSummaryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "No subscription found for the user",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/users/": {
             "get": {
                 "security": [
@@ -2247,6 +2388,136 @@
                 }
             }
         },
+        "handlers.GetPlansResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Operation success message",
+                    "type": "string",
+                    "example": "Plans retrieved successfully"
+                },
+                "plans": {
+                    "description": "List of available plans",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.PlanOption"
+                    }
+                }
+            }
+        },
+        "handlers.GetSubscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "auto_renew": {
+                    "description": "Whether auto-renewal is enabled",
+                    "type": "boolean",
+                    "example": true
+                },
+                "created_at": {
+                    "description": "Date when subscription was created",
+                    "type": "string",
+                    "example": "2025-01-01T00:00:00Z"
+                },
+                "days_remaining": {
+                    "description": "Days remaining until expiration (null for unlimited plans)",
+                    "type": "integer",
+                    "example": 22
+                },
+                "expires_at": {
+                    "description": "Date when subscription expires (null for unlimited plans)",
+                    "type": "string",
+                    "example": "2025-02-01T00:00:00Z"
+                },
+                "id": {
+                    "description": "Subscription ID",
+                    "type": "string",
+                    "example": "sub_a1b2c3d4e5f6789"
+                },
+                "message": {
+                    "description": "Message indicating successful operation",
+                    "type": "string",
+                    "example": "Subscription details retrieved successfully"
+                },
+                "plan": {
+                    "description": "Plan details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PlanDetails"
+                        }
+                    ]
+                },
+                "started_at": {
+                    "description": "Date when subscription started",
+                    "type": "string",
+                    "example": "2025-01-01T00:00:00Z"
+                },
+                "status": {
+                    "description": "Subscription status",
+                    "type": "string",
+                    "example": "ACTIVE"
+                },
+                "updated_at": {
+                    "description": "Date when subscription was last updated",
+                    "type": "string",
+                    "example": "2025-01-01T00:00:00Z"
+                }
+            }
+        },
+        "handlers.GetSubscriptionSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "auto_renew": {
+                    "description": "Whether auto-renewal is enabled",
+                    "type": "boolean",
+                    "example": true
+                },
+                "available_actions": {
+                    "description": "List of actions available to the user",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"create_project\"",
+                        " \"create_api_key\"",
+                        " \"send_message\"]"
+                    ]
+                },
+                "days_remaining": {
+                    "description": "Days remaining until expiration (null for unlimited plans)",
+                    "type": "integer",
+                    "example": 22
+                },
+                "is_expiring_soon": {
+                    "description": "Whether subscription is expiring within 7 days",
+                    "type": "boolean",
+                    "example": false
+                },
+                "message": {
+                    "description": "Message indicating successful operation",
+                    "type": "string",
+                    "example": "Subscription summary retrieved successfully"
+                },
+                "plan_name": {
+                    "description": "Plan name",
+                    "type": "string",
+                    "example": "FREE"
+                },
+                "status": {
+                    "description": "Subscription status",
+                    "type": "string",
+                    "example": "ACTIVE"
+                },
+                "usage": {
+                    "description": "Current usage details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.UsageDetails"
+                        }
+                    ]
+                }
+            }
+        },
         "handlers.GetUserResponse": {
             "type": "object",
             "properties": {
@@ -2320,6 +2591,116 @@
                 "total_pages": {
                     "description": "Total number of pages",
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.PlanDetails": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "description": "Currency for the plan price",
+                    "type": "string",
+                    "example": "USD"
+                },
+                "duration_in_days": {
+                    "description": "Duration of the plan in days",
+                    "type": "integer",
+                    "example": 30
+                },
+                "id": {
+                    "description": "Plan ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "max_api_keys": {
+                    "description": "Maximum API keys allowed",
+                    "type": "integer",
+                    "example": 3
+                },
+                "max_messages_per_month": {
+                    "description": "Maximum messages per month allowed",
+                    "type": "integer",
+                    "example": 1000
+                },
+                "max_projects": {
+                    "description": "Maximum number of projects allowed",
+                    "type": "integer",
+                    "example": 5
+                },
+                "name": {
+                    "description": "Plan name",
+                    "type": "string",
+                    "example": "FREE"
+                },
+                "price": {
+                    "description": "Plan price in cents",
+                    "type": "integer",
+                    "example": 0
+                }
+            }
+        },
+        "handlers.PlanOption": {
+            "type": "object",
+            "properties": {
+                "discount": {
+                    "description": "Discount percentage for yearly plans",
+                    "type": "integer",
+                    "example": 10
+                },
+                "features": {
+                    "description": "List of plan features",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"Unlimited projects\"",
+                        " \"Priority support\"",
+                        " \"Advanced analytics\"]"
+                    ]
+                },
+                "id": {
+                    "description": "Plan ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "description": "Plan name",
+                    "type": "string",
+                    "example": "PLUS"
+                },
+                "pricing": {
+                    "description": "Plan pricing information",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PlanPricing"
+                        }
+                    ]
+                },
+                "recommended": {
+                    "description": "Whether this is the recommended plan",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "handlers.PlanPricing": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "description": "Currency code",
+                    "type": "string",
+                    "example": "USD"
+                },
+                "monthly": {
+                    "description": "Monthly price in cents/smallest currency unit",
+                    "type": "integer",
+                    "example": 999
+                },
+                "yearly": {
+                    "description": "Yearly price in cents/smallest currency unit",
+                    "type": "integer",
+                    "example": 9999
                 }
             }
         },
@@ -2486,6 +2867,55 @@
                     "description": "New label for the exchange",
                     "type": "string",
                     "example": "New OTP Messages"
+                }
+            }
+        },
+        "handlers.UsageDetails": {
+            "type": "object",
+            "properties": {
+                "api_keys": {
+                    "description": "API keys usage",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.UsageItem"
+                        }
+                    ]
+                },
+                "messages_this_month": {
+                    "description": "Messages sent this month",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.UsageItem"
+                        }
+                    ]
+                },
+                "projects": {
+                    "description": "Projects usage",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.UsageItem"
+                        }
+                    ]
+                }
+            }
+        },
+        "handlers.UsageItem": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "description": "Current usage count",
+                    "type": "integer",
+                    "example": 3
+                },
+                "limit": {
+                    "description": "Maximum allowed (null means unlimited)",
+                    "type": "integer",
+                    "example": 5
+                },
+                "percentage": {
+                    "description": "Usage percentage (0-100, null if unlimited)",
+                    "type": "number",
+                    "example": 60
                 }
             }
         },
