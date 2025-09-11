@@ -244,14 +244,6 @@ func List() []*gormigrate.Migration {
 		{
 			ID: "008_add_subscription_id",
 			Migrate: func(tx *gorm.DB) error {
-				if err := tx.Exec("DROP INDEX IF EXISTS idx_subscriptions_subscription_id ON subscriptions").Error; err != nil {
-					return fmt.Errorf("failed to drop subscription_id index: %w", err)
-				}
-
-				if err := tx.Exec("ALTER TABLE subscriptions MODIFY COLUMN subscription_id VARCHAR(64) NULL").Error; err != nil {
-					return fmt.Errorf("failed to remove NOT NULL constraint from subscription_id: %w", err)
-				}
-
 				var subscriptions []models.Subscription
 				if err := tx.Find(&subscriptions).Error; err != nil {
 					return fmt.Errorf("failed to fetch existing subscriptions: %w", err)
@@ -266,14 +258,6 @@ func List() []*gormigrate.Migration {
 					if err := tx.Model(&subscription).Update("subscription_id", subID).Error; err != nil {
 						return fmt.Errorf("failed to update subscription %d with subscription_id: %w", subscription.ID, err)
 					}
-				}
-
-				if err := tx.Exec("ALTER TABLE subscriptions MODIFY COLUMN subscription_id VARCHAR(64) NOT NULL").Error; err != nil {
-					return fmt.Errorf("failed to add NOT NULL constraint to subscription_id: %w", err)
-				}
-
-				if err := tx.Exec("CREATE UNIQUE INDEX idx_subscriptions_subscription_id ON subscriptions(subscription_id)").Error; err != nil {
-					return fmt.Errorf("failed to create unique index on subscription_id: %w", err)
 				}
 
 				return nil
