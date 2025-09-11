@@ -20,7 +20,7 @@ const (
 
 type Subscription struct {
 	ID             uint               `gorm:"primaryKey"`
-	SubscriptionID string             `gorm:"size:64"`
+	SubscriptionID string             `gorm:"size:64;uniqueIndex;not null"`
 	Status         SubscriptionStatus `gorm:"size:50;not null;default:'ACTIVE'"`
 	AutoRenew      bool               `gorm:"not null;default:true"`
 	StartedAt      time.Time
