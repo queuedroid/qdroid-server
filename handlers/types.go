@@ -380,6 +380,23 @@ type VerifyEmailRequest struct {
 	Token string `json:"token" example:"evt_a1b2c3d4e5f6789"`
 }
 
+// swagger:model ForgotPasswordRequest
+type ForgotPasswordRequest struct {
+	// User's email address
+	// required: true
+	Email string `json:"email" example:"user@example.com"`
+}
+
+// swagger:model ResetPasswordRequest
+type ResetPasswordRequest struct {
+	// Password reset token
+	// required: true
+	Token string `json:"token" example:"prt_a1b2c3d4e5f6789"`
+	// New password
+	// required: true
+	NewPassword string `json:"new_password" example:"MyNewPassword@456"`
+}
+
 // swagger:model PlanDetails
 type PlanDetails struct {
 	// Plan ID
