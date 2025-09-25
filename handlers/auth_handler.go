@@ -516,7 +516,7 @@ func ForgotPasswordHandler(c echo.Context) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			logger.Error("User not found for password reset.")
 			return c.JSON(http.StatusOK, GenericResponse{
-				Message: "If an account with that email exists, we've sent a password reset link",
+				Message: "If the email you entered is linked to an account, you’ll receive password reset instructions in your mail. Be sure to check your inbox and spam folder.",
 			})
 		}
 
@@ -524,7 +524,7 @@ func ForgotPasswordHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	recentReset := models.PasswordReset{}
+	recentReset := models.EmailVerification{}
 	if err := db.Conn.Where("user_id = ? AND created_at > ?", user.ID, time.Now().Add(-5*time.Minute)).
 		First(&recentReset).Error; err == nil {
 		logger.Info("Recent password reset email already sent")
@@ -542,9 +542,9 @@ func ForgotPasswordHandler(c echo.Context) error {
 
 	expiresAt := time.Now().Add(24 * time.Hour)
 
-	passwordReset := models.PasswordReset{}
+	passwordReset := models.EmailVerification{}
 	if err := db.Conn.Where("user_id = ? AND is_used = ?", user.ID, false).
-		Assign(models.PasswordReset{
+		Assign(models.EmailVerification{
 			UserID:    user.ID,
 			Token:     token,
 			ExpiresAt: expiresAt,
@@ -563,7 +563,7 @@ func ForgotPasswordHandler(c echo.Context) error {
 	fullName := ""
 
 	baseUrl := commons.GetEnv("BASE_URL", "https://api.queuedroid.com")
-	resetLink := commons.GetEnv("PASSWORD_RESET_URL", "https://queuedroid.com") + "/reset-password?token=" + token
+	resetLink := commons.GetEnv("EMAIL_VERIFICATION_URL", "https://queuedroid.com") + "/reset-password?token=" + token
 	vars := map[string]any{
 		"username":          email,
 		"product_name":      "Queuedroid",
@@ -590,7 +590,7 @@ func ForgotPasswordHandler(c echo.Context) error {
 
 	logger.Infof("Password reset email sent successfully.")
 	return c.JSON(http.StatusOK, GenericResponse{
-		Message: "If an account with that email exists, we've sent a password reset link",
+		Message: "If the email you entered is linked to an account, you’ll receive password reset instructions in your mail. Be sure to check your inbox and spam folder.",
 	})
 }
 
@@ -639,7 +639,7 @@ func ResetPasswordHandler(c echo.Context) error {
 		}
 	}
 
-	passwordReset := models.PasswordReset{}
+	passwordReset := models.EmailVerification{}
 
 	if err := db.Conn.Preload("User").
 		Where("token = ? AND is_used = ?", req.Token, false).
@@ -680,6 +680,10 @@ func ResetPasswordHandler(c echo.Context) error {
 	}
 
 	tx := db.Conn.Begin()
+	if tx.Error != nil {
+		logger.Errorf("Transaction begin failed: %v", tx.Error)
+		return echo.ErrInternalServerError
+	}
 
 	if err := tx.Model(&passwordReset.User).Update("password", hashedNewPassword).Error; err != nil {
 		tx.Rollback()
@@ -693,13 +697,16 @@ func ResetPasswordHandler(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	if err := tx.Where("user_id = ?", passwordReset.User.ID).Delete(&models.Session{}).Error; err != nil {
+	if err := tx.Unscoped().Where("user_id = ?", passwordReset.User.ID).Delete(&models.Session{}).Error; err != nil {
 		tx.Rollback()
 		logger.Errorf("Failed to invalidate user sessions: %v", err)
 		return echo.ErrInternalServerError
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		logger.Errorf("Transaction commit failed: %v", err)
+		return echo.ErrInternalServerError
+	}
 
 	logger.Infof("Password reset successful for user ID: %d", passwordReset.User.ID)
 	return c.JSON(http.StatusOK, GenericResponse{
