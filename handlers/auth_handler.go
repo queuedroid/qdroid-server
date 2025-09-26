@@ -472,3 +472,244 @@ func LogoutHandler(c echo.Context) error {
 	logger.Infof("User logged out successfully")
 	return c.NoContent(http.StatusNoContent)
 }
+
+// ForgotPasswordHandler godoc
+// @Summary      Request password reset
+// @Description  Sends a password reset email to the user's registered email address
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        forgotPasswordRequest  body  ForgotPasswordRequest  true  "Forgot password request"
+// @Success      200 {object} GenericResponse "Password reset email sent successfully"
+// @Failure      400 {object} echo.HTTPError  "Bad request"
+// @Failure      404 {object} echo.HTTPError  "User not found"
+// @Failure      429 {object} echo.HTTPError  "Too many requests"
+// @Failure      500 {object} echo.HTTPError  "Internal server error"
+// @Router       /v1/auth/forgot-password [post]
+func ForgotPasswordHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	var req ForgotPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		logger.Error("Invalid forgot password request payload:", err)
+		return echo.ErrBadRequest
+	}
+
+	if req.Email == "" {
+		logger.Error("Email is required.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "email field is required",
+		}
+	}
+
+	newCrypto := crypto.NewCrypto()
+	user := models.User{}
+
+	emailPseudo, err := newCrypto.HashData([]byte(req.Email), "HMAC-SHA-256")
+	if err != nil {
+		logger.Errorf("Failed to hash email: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := db.Conn.Where("email_pseudonym = ?", emailPseudo).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("User not found for password reset.")
+			return c.JSON(http.StatusOK, GenericResponse{
+				Message: "If the email you entered is linked to an account, you’ll receive password reset instructions in your mail. Be sure to check your inbox and spam folder.",
+			})
+		}
+
+		logger.Errorf("Failed to find user: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	recentReset := models.EmailVerification{}
+	if err := db.Conn.Where("user_id = ? AND created_at > ?", user.ID, time.Now().Add(-5*time.Minute)).
+		First(&recentReset).Error; err == nil {
+		logger.Info("Recent password reset email already sent")
+		return &echo.HTTPError{
+			Code:    http.StatusTooManyRequests,
+			Message: "Please wait 5 minutes before requesting another password reset email",
+		}
+	}
+
+	token, err := crypto.GenerateRandomString("prt_", 32, "hex")
+	if err != nil {
+		logger.Errorf("Failed to generate password reset token: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	passwordReset := models.EmailVerification{}
+	if err := db.Conn.Where("user_id = ? AND is_used = ?", user.ID, false).
+		Assign(models.EmailVerification{
+			UserID:    user.ID,
+			Token:     token,
+			ExpiresAt: expiresAt,
+			IsUsed:    false,
+		}).FirstOrCreate(&passwordReset).Error; err != nil {
+		logger.Errorf("Failed to check existing password reset tokens: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	emailBytes, err := newCrypto.DecryptData(user.EmailEncrypted, "AES-GCM")
+	if err != nil {
+		logger.Errorf("Failed to decrypt user email: %v", err)
+		return echo.ErrInternalServerError
+	}
+	email := string(emailBytes)
+	fullName := ""
+
+	baseUrl := commons.GetEnv("BASE_URL", "https://api.queuedroid.com")
+	resetLink := commons.GetEnv("EMAIL_VERIFICATION_URL", "https://queuedroid.com") + "/reset-password?token=" + token
+	vars := map[string]any{
+		"username":          email,
+		"product_name":      "Queuedroid",
+		"reset_link":        resetLink,
+		"base_url":          baseUrl,
+		"expiration_hours":  "24",
+	}
+
+	if user.FullNameEncrypted != nil && len(*user.FullNameEncrypted) > 0 {
+		fullNameBytes, err := newCrypto.DecryptData(*user.FullNameEncrypted, "AES-GCM")
+		if err == nil && len(fullNameBytes) > 0 {
+			fullName = string(fullNameBytes)
+			vars["name"] = fullName
+		}
+	}
+
+	go notifications.DispatchNotification(notifications.Email, notifications.SMTP, notifications.NotificationData{
+		To:        email,
+		ToName:    &fullName,
+		Subject:   "Reset Your QueueDroid Password",
+		Template:  "password-reset",
+		Variables: vars,
+	})
+
+	logger.Infof("Password reset email sent successfully.")
+	return c.JSON(http.StatusOK, GenericResponse{
+		Message: "If the email you entered is linked to an account, you’ll receive password reset instructions in your mail. Be sure to check your inbox and spam folder.",
+	})
+}
+
+// ResetPasswordHandler godoc
+// @Summary      Reset password
+// @Description  Resets the user's password using the token sent via email
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        resetPasswordRequest  body  ResetPasswordRequest  true  "Password reset request"
+// @Success      200 {object} GenericResponse "Password reset successfully"
+// @Failure      400 {object} echo.HTTPError  "Bad request or invalid token"
+// @Failure      410 {object} echo.HTTPError  "Token expired"
+// @Failure      500 {object} echo.HTTPError  "Internal server error"
+// @Router       /v1/auth/reset-password [post]
+func ResetPasswordHandler(c echo.Context) error {
+	logger := c.Logger()
+
+	var req ResetPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		logger.Error("Invalid password reset request payload:", err)
+		return echo.ErrBadRequest
+	}
+
+	if req.Token == "" {
+		logger.Error("Password reset token is required")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "token field is required",
+		}
+	}
+
+	if req.NewPassword == "" {
+		logger.Error("New password is required")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "new_password field is required",
+		}
+	}
+
+	if err := passwordcheck.ValidatePassword(c.Request().Context(), req.NewPassword); err != nil {
+		logger.Error("New password validation failed: ", err)
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid new password: " + err.Error(),
+		}
+	}
+
+	passwordReset := models.EmailVerification{}
+
+	if err := db.Conn.Preload("User").
+		Where("token = ? AND is_used = ?", req.Token, false).
+		First(&passwordReset).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Error("Invalid or already used password reset token")
+			return &echo.HTTPError{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid or already used password reset token",
+			}
+		}
+		logger.Errorf("Failed to find password reset record: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if time.Now().After(passwordReset.ExpiresAt) {
+		logger.Error("Password reset token has expired")
+		return &echo.HTTPError{
+			Code:    http.StatusGone,
+			Message: "Password reset token has expired. Please request a new one.",
+		}
+	}
+
+	newCrypto := crypto.NewCrypto()
+
+	if err := newCrypto.VerifyPassword(req.NewPassword, passwordReset.User.Password); err == nil {
+		logger.Error("New password is the same as current password.")
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "New password must be different from the current password",
+		}
+	}
+
+	hashedNewPassword, err := newCrypto.HashPassword(req.NewPassword)
+	if err != nil {
+		logger.Errorf("Failed to hash new password: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	tx := db.Conn.Begin()
+	if tx.Error != nil {
+		logger.Errorf("Transaction begin failed: %v", tx.Error)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Model(&passwordReset.User).Update("password", hashedNewPassword).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to update user password: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Model(&passwordReset).Update("is_used", true).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to mark password reset token as used: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Unscoped().Where("user_id = ?", passwordReset.User.ID).Delete(&models.Session{}).Error; err != nil {
+		tx.Rollback()
+		logger.Errorf("Failed to invalidate user sessions: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		logger.Errorf("Transaction commit failed: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	logger.Infof("Password reset successful for user ID: %d", passwordReset.User.ID)
+	return c.JSON(http.StatusOK, GenericResponse{
+		Message: "Password reset successfully. Please log in with your new password.",
+	})
+}

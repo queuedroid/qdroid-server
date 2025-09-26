@@ -203,6 +203,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/auth/forgot-password": {
+            "post": {
+                "description": "Sends a password reset email to the user's registered email address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Request password reset",
+                "parameters": [
+                    {
+                        "description": "Forgot password request",
+                        "name": "forgotPasswordRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset email sent successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns a token.",
@@ -351,6 +409,58 @@ const docTemplate = `{
                     },
                     "429": {
                         "description": "Too many requests",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/reset-password": {
+            "post": {
+                "description": "Resets the user's password using the token sent via email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "resetPasswordRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "410": {
+                        "description": "Token expired",
                         "schema": {
                             "$ref": "#/definitions/echo.HTTPError"
                         }
@@ -2390,6 +2500,16 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ForgotPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "User's email address\nrequired: true",
+                    "type": "string",
+                    "example": "user@example.com"
+                }
+            }
+        },
         "handlers.GenericResponse": {
             "type": "object",
             "properties": {
@@ -2813,6 +2933,21 @@ const docTemplate = `{
                             "$ref": "#/definitions/handlers.PaginationDetails"
                         }
                     ]
+                }
+            }
+        },
+        "handlers.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "description": "New password\nrequired: true",
+                    "type": "string",
+                    "example": "MyNewPassword@456"
+                },
+                "token": {
+                    "description": "Password reset token\nrequired: true",
+                    "type": "string",
+                    "example": "prt_a1b2c3d4e5f6789"
                 }
             }
         },
