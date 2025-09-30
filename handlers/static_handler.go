@@ -53,6 +53,7 @@ func ServeStaticFile(c echo.Context) error {
 		".png":  true,
 		".jpg":  true,
 		".jpeg": true,
+		".gif":  true,
 	}
 
 	ext := strings.ToLower(filepath.Ext(absFullPath))
