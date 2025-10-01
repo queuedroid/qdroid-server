@@ -1701,6 +1701,181 @@
                 }
             }
         },
+        "/v1/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all active sessions for the authenticated user, including session details like device information, location, and last activity.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get user sessions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10, max 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of user sessions",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SessionListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sessions/delete-all": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes all sessions except the current one. This will log out the user from all other devices/sessions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Delete all other sessions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All other sessions deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeleteAllSessionsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sessions/{session_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a specific session by ID. This will log out the user from that session. Cannot delete the current session - use logout instead.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Delete a session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "Bearer \u003cyour_token_here\u003e",
+                        "description": "Bearer token for authentication. Replace \u003cyour_token_here\u003e with a valid token.",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "session_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GenericResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, cannot delete current session",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid or expired session token",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/subscriptions/": {
             "get": {
                 "security": [
@@ -2263,6 +2438,26 @@
                     "description": "User's password\nrequired: true",
                     "type": "string",
                     "example": "MySecretPassword@123"
+                }
+            }
+        },
+        "handlers.DeleteAllSessionsResponse": {
+            "type": "object",
+            "properties": {
+                "deleted_count": {
+                    "description": "Number of sessions deleted",
+                    "type": "integer",
+                    "example": 3
+                },
+                "message": {
+                    "description": "Message indicating successful operation",
+                    "type": "string",
+                    "example": "All other sessions deleted successfully"
+                },
+                "total_sessions": {
+                    "description": "Total number of sessions before deletion",
+                    "type": "integer",
+                    "example": 4
                 }
             }
         },
@@ -2962,6 +3157,91 @@
                     "description": "The queue ID to use for sending the message",
                     "type": "string",
                     "example": "exch_jkdfkjdfkdfjkd.237.62401"
+                }
+            }
+        },
+        "handlers.SessionDetails": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Session creation time",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "days_until_expiry": {
+                    "description": "Days until session expires (null if expired or no expiration)",
+                    "type": "integer",
+                    "example": 25
+                },
+                "expires_at": {
+                    "description": "Session expiration time",
+                    "type": "string",
+                    "example": "2023-11-01T12:00:00Z"
+                },
+                "id": {
+                    "description": "Session ID",
+                    "type": "integer",
+                    "example": 123
+                },
+                "ip_address": {
+                    "description": "IP address of the session (if available)",
+                    "type": "string",
+                    "example": "192.168.1.1"
+                },
+                "is_current": {
+                    "description": "Whether this is the current session",
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_expired": {
+                    "description": "Whether the session is expired",
+                    "type": "boolean",
+                    "example": false
+                },
+                "last_used_at": {
+                    "description": "Last time the session was used",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "token": {
+                    "description": "Session token (truncated for security)",
+                    "type": "string",
+                    "example": "st_long_..."
+                },
+                "updated_at": {
+                    "description": "Session last update time",
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "user_agent": {
+                    "description": "User agent string (if available)",
+                    "type": "string",
+                    "example": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                }
+            }
+        },
+        "handlers.SessionListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "List of sessions",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.SessionDetails"
+                    }
+                },
+                "message": {
+                    "description": "Message indicating successful retrieval",
+                    "type": "string",
+                    "example": "Sessions retrieved successfully"
+                },
+                "pagination": {
+                    "description": "Pagination details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/handlers.PaginationDetails"
+                        }
+                    ]
                 }
             }
         },

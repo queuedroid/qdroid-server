@@ -514,3 +514,49 @@ type GetPlansResponse struct {
 	// List of available plans
 	Plans []PlanOption `json:"plans"`
 }
+
+// swagger:model SessionDetails
+type SessionDetails struct {
+	// Session ID
+	ID uint `json:"id" example:"123"`
+	// Session token (truncated for security)
+	Token string `json:"token" example:"st_long_..."`
+	// IP address of the session (if available)
+	IPAddress *string `json:"ip_address" example:"192.168.1.1"`
+	// User agent string (if available)
+	UserAgent *string `json:"user_agent" example:"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"`
+	// Whether this is the current session
+	IsCurrent bool `json:"is_current" example:"true"`
+	// Whether the session is expired
+	IsExpired bool `json:"is_expired" example:"false"`
+	// Days until session expires (null if expired or no expiration)
+	DaysUntilExpiry *int `json:"days_until_expiry" example:"25"`
+	// Last time the session was used
+	LastUsedAt *string `json:"last_used_at" example:"2023-10-01T12:00:00Z"`
+	// Session expiration time
+	ExpiresAt *string `json:"expires_at" example:"2023-11-01T12:00:00Z"`
+	// Session creation time
+	CreatedAt string `json:"created_at" example:"2023-10-01T12:00:00Z"`
+	// Session last update time
+	UpdatedAt string `json:"updated_at" example:"2023-10-01T12:00:00Z"`
+}
+
+// swagger:model SessionListResponse
+type SessionListResponse struct {
+	// List of sessions
+	Data []SessionDetails `json:"data"`
+	// Pagination details
+	Pagination PaginationDetails `json:"pagination"`
+	// Message indicating successful retrieval
+	Message string `json:"message" example:"Sessions retrieved successfully"`
+}
+
+// swagger:model DeleteAllSessionsResponse
+type DeleteAllSessionsResponse struct {
+	// Message indicating successful operation
+	Message string `json:"message" example:"All other sessions deleted successfully"`
+	// Number of sessions deleted
+	DeletedCount int `json:"deleted_count" example:"3"`
+	// Total number of sessions before deletion
+	TotalSessions int `json:"total_sessions" example:"4"`
+}

@@ -211,6 +211,21 @@ definitions:
         example: MySecretPassword@123
         type: string
     type: object
+  handlers.DeleteAllSessionsResponse:
+    properties:
+      deleted_count:
+        description: Number of sessions deleted
+        example: 3
+        type: integer
+      message:
+        description: Message indicating successful operation
+        example: All other sessions deleted successfully
+        type: string
+      total_sessions:
+        description: Total number of sessions before deletion
+        example: 4
+        type: integer
+    type: object
   handlers.EventLogDetails:
     properties:
       carrier:
@@ -741,6 +756,69 @@ definitions:
         description: The queue ID to use for sending the message
         example: exch_jkdfkjdfkdfjkd.237.62401
         type: string
+    type: object
+  handlers.SessionDetails:
+    properties:
+      created_at:
+        description: Session creation time
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      days_until_expiry:
+        description: Days until session expires (null if expired or no expiration)
+        example: 25
+        type: integer
+      expires_at:
+        description: Session expiration time
+        example: "2023-11-01T12:00:00Z"
+        type: string
+      id:
+        description: Session ID
+        example: 123
+        type: integer
+      ip_address:
+        description: IP address of the session (if available)
+        example: 192.168.1.1
+        type: string
+      is_current:
+        description: Whether this is the current session
+        example: true
+        type: boolean
+      is_expired:
+        description: Whether the session is expired
+        example: false
+        type: boolean
+      last_used_at:
+        description: Last time the session was used
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      token:
+        description: Session token (truncated for security)
+        example: st_long_...
+        type: string
+      updated_at:
+        description: Session last update time
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      user_agent:
+        description: User agent string (if available)
+        example: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+        type: string
+    type: object
+  handlers.SessionListResponse:
+    properties:
+      data:
+        description: List of sessions
+        items:
+          $ref: '#/definitions/handlers.SessionDetails'
+        type: array
+      message:
+        description: Message indicating successful retrieval
+        example: Sessions retrieved successfully
+        type: string
+      pagination:
+        allOf:
+        - $ref: '#/definitions/handlers.PaginationDetails'
+        description: Pagination details
     type: object
   handlers.SignupRequest:
     properties:
@@ -1956,6 +2034,125 @@ paths:
       summary: Get available plans
       tags:
       - plans
+  /v1/sessions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all active sessions for the authenticated user, including
+        session details like device information, location, and last activity.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10, max 100)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of user sessions
+          schema:
+            $ref: '#/definitions/handlers.SessionListResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get user sessions
+      tags:
+      - sessions
+  /v1/sessions/{session_id}:
+    delete:
+      description: Deletes a specific session by ID. This will log out the user from
+        that session. Cannot delete the current session - use logout instead.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Session ID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Session deleted successfully
+          schema:
+            $ref: '#/definitions/handlers.GenericResponse'
+        "400":
+          description: Bad request, cannot delete current session
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "404":
+          description: Session not found
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Delete a session
+      tags:
+      - sessions
+  /v1/sessions/delete-all:
+    delete:
+      description: Deletes all sessions except the current one. This will log out
+        the user from all other devices/sessions.
+      parameters:
+      - default: Bearer <your_token_here>
+        description: Bearer token for authentication. Replace <your_token_here> with
+          a valid token.
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All other sessions deleted successfully
+          schema:
+            $ref: '#/definitions/handlers.DeleteAllSessionsResponse'
+        "401":
+          description: Unauthorized, invalid or expired session token
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Delete all other sessions
+      tags:
+      - sessions
   /v1/subscriptions/:
     get:
       consumes:
