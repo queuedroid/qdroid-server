@@ -86,18 +86,15 @@ func GetSessionsHandler(c echo.Context) error {
 			UpdatedAt: session.UpdatedAt.Format(time.RFC3339),
 		}
 
-		// Check if this is the current session
 		if currentSessionExists && currentSession.ID == session.ID {
 			detail.IsCurrent = true
 		}
 
-		// Format last used time
 		if session.LastUsedAt != nil {
 			lastUsed := session.LastUsedAt.Format(time.RFC3339)
 			detail.LastUsedAt = &lastUsed
 		}
 
-		// Decrypt IP address if available
 		if session.IPAddressEncrypted != nil {
 			if decryptedIP, err := newCrypto.DecryptData(*session.IPAddressEncrypted, "AES-GCM"); err == nil {
 				ipStr := string(decryptedIP)
@@ -105,7 +102,6 @@ func GetSessionsHandler(c echo.Context) error {
 			}
 		}
 
-		// Decrypt user agent if available
 		if session.UserAgentEncrypted != nil {
 			if decryptedUA, err := newCrypto.DecryptData(*session.UserAgentEncrypted, "AES-GCM"); err == nil {
 				uaStr := string(decryptedUA)
