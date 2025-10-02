@@ -82,35 +82,22 @@ func GetSessionsHandler(c echo.Context) error {
 	sessionDetails := make([]SessionDetails, 0, len(sessions))
 	for _, session := range sessions {
 		detail := SessionDetails{
-			ID:        session.ID,
-			Token:     session.Token,
 			CreatedAt: session.CreatedAt.Format(time.RFC3339),
 			UpdatedAt: session.UpdatedAt.Format(time.RFC3339),
 		}
 
+		// Check if this is the current session
 		if currentSessionExists && currentSession.ID == session.ID {
 			detail.IsCurrent = true
 		}
 
+		// Format last used time
 		if session.LastUsedAt != nil {
 			lastUsed := session.LastUsedAt.Format(time.RFC3339)
 			detail.LastUsedAt = &lastUsed
 		}
 
-		if session.ExpiresAt != nil {
-			expires := session.ExpiresAt.Format(time.RFC3339)
-			detail.ExpiresAt = &expires
-
-			if session.ExpiresAt.Before(time.Now()) {
-				detail.IsExpired = true
-			}
-
-			if !detail.IsExpired {
-				daysUntilExpiry := int(time.Until(*session.ExpiresAt).Hours() / 24)
-				detail.DaysUntilExpiry = &daysUntilExpiry
-			}
-		}
-
+		// Decrypt IP address if available
 		if session.IPAddressEncrypted != nil {
 			if decryptedIP, err := newCrypto.DecryptData(*session.IPAddressEncrypted, "AES-GCM"); err == nil {
 				ipStr := string(decryptedIP)
@@ -118,6 +105,7 @@ func GetSessionsHandler(c echo.Context) error {
 			}
 		}
 
+		// Decrypt user agent if available
 		if session.UserAgentEncrypted != nil {
 			if decryptedUA, err := newCrypto.DecryptData(*session.UserAgentEncrypted, "AES-GCM"); err == nil {
 				uaStr := string(decryptedUA)
