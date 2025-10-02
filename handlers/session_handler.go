@@ -82,12 +82,17 @@ func GetSessionsHandler(c echo.Context) error {
 	sessionDetails := make([]SessionDetails, 0, len(sessions))
 	for _, session := range sessions {
 		detail := SessionDetails{
+			ID:        session.ID,
 			CreatedAt: session.CreatedAt.Format(time.RFC3339),
 			UpdatedAt: session.UpdatedAt.Format(time.RFC3339),
 		}
 
 		if currentSessionExists && currentSession.ID == session.ID {
 			detail.IsCurrent = true
+		}
+
+		if session.ExpiresAt != nil && session.ExpiresAt.Before(time.Now()) {
+			detail.IsExpired = true
 		}
 
 		if session.LastUsedAt != nil {

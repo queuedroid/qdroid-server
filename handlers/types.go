@@ -517,12 +517,16 @@ type GetPlansResponse struct {
 
 // swagger:model SessionDetails
 type SessionDetails struct {
+	// Session ID
+	ID uint `json:"id" example:"123"`
 	// IP address of the session (if available)
 	IPAddress *string `json:"ip_address" example:"192.168.1.1"`
 	// User agent string (if available)
 	UserAgent *string `json:"user_agent" example:"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"`
 	// Whether this is the current session
 	IsCurrent bool `json:"is_current" example:"true"`
+	// Whether the session is expired
+	IsExpired bool `json:"is_expired" example:"false"`
 	// Last time the session was used
 	LastUsedAt *string `json:"last_used_at" example:"2023-10-01T12:00:00Z"`
 	// Session creation time

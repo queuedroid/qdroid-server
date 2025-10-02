@@ -61,10 +61,14 @@ func generateSessionToken(c echo.Context, user models.User, newCrypto crypto.Cry
 		return "", err
 	}
 
+	sessionExp := time.Now().Add(30 * 24 * time.Hour)
+
 	if err := db.Conn.Where(
 		"user_id = ? AND ip_address_pseudonym = ? AND user_agent_pseudonym = ?", user.ID, ipAddressPseudo, uaPseudo).
 		Assign(models.Session{
 			UserID:             user.ID,
+			Token:              sessionToken,
+			ExpiresAt:          &sessionExp,
 			LastUsedAt:         &sessionLastused,
 			UserAgentEncrypted: &uaEnc,
 			UserAgentPseudonym: &uaPseudo,
