@@ -83,9 +83,7 @@ func GetSessionsHandler(c echo.Context) error {
 	for _, session := range sessions {
 		detail := SessionDetails{
 			ID:        session.ID,
-			Token:     session.Token,
 			CreatedAt: session.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: session.UpdatedAt.Format(time.RFC3339),
 		}
 
 		if currentSessionExists && currentSession.ID == session.ID {
@@ -98,16 +96,8 @@ func GetSessionsHandler(c echo.Context) error {
 		}
 
 		if session.ExpiresAt != nil {
-			expires := session.ExpiresAt.Format(time.RFC3339)
-			detail.ExpiresAt = &expires
-
 			if session.ExpiresAt.Before(time.Now()) {
 				detail.IsExpired = true
-			}
-
-			if !detail.IsExpired {
-				daysUntilExpiry := int(time.Until(*session.ExpiresAt).Hours() / 24)
-				detail.DaysUntilExpiry = &daysUntilExpiry
 			}
 		}
 

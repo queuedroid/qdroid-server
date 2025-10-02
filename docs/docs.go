@@ -3179,16 +3179,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-10-01T12:00:00Z"
                 },
-                "days_until_expiry": {
-                    "description": "Days until session expires (null if expired or no expiration)",
-                    "type": "integer",
-                    "example": 25
-                },
-                "expires_at": {
-                    "description": "Session expiration time",
-                    "type": "string",
-                    "example": "2023-11-01T12:00:00Z"
-                },
                 "id": {
                     "description": "Session ID",
                     "type": "integer",
@@ -3211,16 +3201,6 @@ const docTemplate = `{
                 },
                 "last_used_at": {
                     "description": "Last time the session was used",
-                    "type": "string",
-                    "example": "2023-10-01T12:00:00Z"
-                },
-                "token": {
-                    "description": "Session token (truncated for security)",
-                    "type": "string",
-                    "example": "st_long_..."
-                },
-                "updated_at": {
-                    "description": "Session last update time",
                     "type": "string",
                     "example": "2023-10-01T12:00:00Z"
                 },
