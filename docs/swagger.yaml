@@ -763,14 +763,6 @@ definitions:
         description: Session creation time
         example: "2023-10-01T12:00:00Z"
         type: string
-      days_until_expiry:
-        description: Days until session expires (null if expired or no expiration)
-        example: 25
-        type: integer
-      expires_at:
-        description: Session expiration time
-        example: "2023-11-01T12:00:00Z"
-        type: string
       id:
         description: Session ID
         example: 123
@@ -790,10 +782,6 @@ definitions:
       last_used_at:
         description: Last time the session was used
         example: "2023-10-01T12:00:00Z"
-        type: string
-      token:
-        description: Session token (truncated for security)
-        example: st_long_...
         type: string
       updated_at:
         description: Session last update time

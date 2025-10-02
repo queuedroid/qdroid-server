@@ -31,6 +31,7 @@ func generateSessionToken(c echo.Context, user models.User, newCrypto crypto.Cry
 		return "", err
 	}
 
+	sessionExp := time.Now().Add(30 * 24 * time.Hour)
 	sessionLastused := time.Now()
 	session := models.Session{}
 
@@ -61,15 +62,13 @@ func generateSessionToken(c echo.Context, user models.User, newCrypto crypto.Cry
 		return "", err
 	}
 
-	sessionExp := time.Now().Add(30 * 24 * time.Hour)
-
 	if err := db.Conn.Where(
 		"user_id = ? AND ip_address_pseudonym = ? AND user_agent_pseudonym = ?", user.ID, ipAddressPseudo, uaPseudo).
 		Assign(models.Session{
 			UserID:             user.ID,
 			Token:              sessionToken,
-			ExpiresAt:          &sessionExp,
 			LastUsedAt:         &sessionLastused,
+			ExpiresAt:          &sessionExp,
 			UserAgentEncrypted: &uaEnc,
 			UserAgentPseudonym: &uaPseudo,
 			IPAddressEncrypted: &ipAddressEnc,
@@ -87,6 +86,7 @@ func generateSessionToken(c echo.Context, user models.User, newCrypto crypto.Cry
 		"jti": sessionToken,
 		"sid": session.ID,
 		"uid": user.ID,
+		"exp": session.ExpiresAt.Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(commons.GetEnv("JWT_SECRET", "default_very_secret_key")))
